@@ -43,7 +43,11 @@ local lockForeground = [
           cellStyle: 'symbolCell', displaySeparatorLine: true, separatorLineColor: colors.separatorColor,
         },
         symbolCategoryCell: { backgroundStyle: 'symbolCategoryHighlight', foregroundStyle: 'symbolCategoryLabel' },
-        symbolCategoryHighlight: Style.geometry({ highlightColor: colors.systemButtonHighlightedBackgroundColor }),
+        symbolCategoryHighlight: Style.geometry({
+          highlightColor: colors.systemButtonHighlightedBackgroundColor,
+          cornerRadius: metrics.key.cornerRadius,
+          insets: { top: 2, bottom: 2, left: 3, right: 3 },
+        }),
         symbolCategoryLabel: Style.text({ fontSize: fonts.systemKeyText,
           normalColor: colors.systemButtonForegroundColor, highlightColor: colors.systemButtonForegroundColor }),
         symbolCell: { backgroundStyle: 'symbolCellHighlight', foregroundStyle: 'symbolLabel' },

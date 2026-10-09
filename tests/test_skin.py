@@ -164,6 +164,44 @@ class GeneratedSkinTests(unittest.TestCase):
         self.assertEqual(doc['toolbarPasteboardButton']['action'], {'shortcut': '#showPasteboardView'})
         self.assertEqual(doc['toolbarScriptButton']['action'], {'shortcut': '#toggleScriptView'})
 
+    def test_main_toolbar_order_actions_and_small_width(self):
+        expected = ['toolbarMenuButton', 'toolbarSpacer', 'toolbarEmojiButton',
+                    'toolbarPasteboardButton', 'toolbarScriptButton', 'toolbarSymbolicButton', 'toolbarSchemaButton']
+        for scheme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('pinyin' + orientation, scheme)
+                self.assertEqual([node['Cell'] for node in doc['toolbarLayout'][0]['HStack']['subviews']], expected)
+                self.assertEqual(doc['toolbarSymbolicButton']['action'], {'keyboardType': 'symbolic'})
+                self.assertEqual(doc['toolbarSchemaButton']['action'], {'shortcut': '#方案切换'})
+                self.assertEqual(doc[doc['toolbarSymbolicButton']['foregroundStyle']]['systemImageName'], 'number')
+                self.assertEqual(doc[doc['toolbarSchemaButton']['foregroundStyle']]['systemImageName'], 'arrow.triangle.2.circlepath')
+                self.assertNotIn('toolbarDismissButton', doc)
+                for name in expected:
+                    if name != 'toolbarSpacer':
+                        self.assertEqual(doc[name]['size']['width'], 38)
+                for width in (320, 390, 430, 568, 680, 844):
+                    rects = dict(layout_rectangles(doc, 'toolbarLayout', width - 18, doc['toolbarHeight']))
+                    self.assertGreater(rects['toolbarSpacer'][2], 0)
+
+    def test_secondary_and_ipad_toolbars_keep_existing_buttons(self):
+        for scheme in ('light', 'dark'):
+            for name in ('numericPortrait', 'numericLandscape', 'symbolicPortrait', 'symbolicLandscape'):
+                doc = load(name, scheme)
+                self.assertEqual([node['Cell'] for node in doc['toolbarLayout'][0]['HStack']['subviews']], [
+                    'toolbarMenuButton', 'toolbarSpacer', 'toolbarEmojiButton', 'toolbarPasteboardButton',
+                    'toolbarScriptButton', 'toolbarDismissButton'
+                ])
+                self.assertEqual(doc['toolbarDismissButton']['action'], 'dismissKeyboard')
+                self.assertNotIn('toolbarSchemaButton', doc)
+                self.assertNotIn('toolbarSymbolicButton', doc)
+            for name in ('iPadPinyinPortrait', 'iPadPinyinLandscape', 'iPadNumericPortrait', 'iPadNumericLandscape'):
+                doc = load(name, scheme)
+                self.assertEqual([node['Cell'] for node in doc['toolbarLayout'][0]['HStack']['subviews']], [
+                    'toolbarMenuButton', 'toolbarSplitToggleButton', 'toolbarSpacer', 'toolbarDismissButton'
+                ])
+                self.assertNotIn('toolbarSchemaButton', doc)
+                self.assertNotIn('toolbarSymbolicButton', doc)
+
 
 if __name__ == '__main__':
     unittest.main()

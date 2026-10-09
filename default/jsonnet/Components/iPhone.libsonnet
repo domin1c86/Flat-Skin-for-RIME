@@ -45,8 +45,8 @@ local text(label, extra={}) = Style.text({
     for i in std.range(0, 25)
   },
 
-  base(isPortrait):: Style.merge([
-    Preedit.new(), Toolbar.new(phoneControls=true),
+  base(isPortrait, mainControls=false):: Style.merge([
+    Preedit.new(), Toolbar.new(phoneControls=true, mainControls=mainControls),
     Theme.shared(metrics.keyInsets.iPhone[if isPortrait then 'portrait' else 'landscape']),
     {
       keyboardHeight: metrics.keyboardHeight.iPhone[if isPortrait then 'portrait' else 'landscape'],

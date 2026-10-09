@@ -33,7 +33,7 @@ local names(row) = [name(c) for c in std.stringChars(row)];
         [upperName]+: { center: { y: 0.59 } },
       };
     Style.merge([
-      Phone.base(isPortrait),
+      Phone.base(isPortrait, mainControls=true),
       { keyboardLayout: [
         Layout.row(names('qwertyuiop')),
         Layout.row(names('asdfghjkl')),

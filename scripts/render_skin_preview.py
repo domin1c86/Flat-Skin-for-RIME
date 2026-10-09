@@ -72,6 +72,13 @@ def icon(draw, name, center, size, color):
         line([(8, 7), (3, 12), (8, 17)]); line([(16, 7), (21, 12), (16, 17)]); line([(14, 4), (10, 20)])
     elif name == 'chevron.down':
         line([(5, 9), (12, 16), (19, 9)])
+    elif name == 'number':
+        line([(9, 3), (7, 21)]); line([(17, 3), (15, 21)])
+        line([(4, 9), (21, 9)]); line([(3, 15), (20, 15)])
+    elif name == 'arrow.triangle.2.circlepath':
+        draw.arc(points([(3, 3), (21, 21)]), 185, 350, fill=color, width=max(1, round(1.8 * unit * SCALE)))
+        draw.arc(points([(3, 3), (21, 21)]), 5, 170, fill=color, width=max(1, round(1.8 * unit * SCALE)))
+        line([(17, 7), (21, 12), (23, 7)]); line([(1, 17), (3, 12), (7, 17)])
     elif name.startswith('delete.left'):
         line([(9, 5), (20, 5), (21, 7), (21, 17), (19, 19), (9, 19), (2, 12), (9, 5)])
         line([(11, 9), (17, 15)]); line([(17, 9), (11, 15)])
@@ -89,18 +96,20 @@ def icon(draw, name, center, size, color):
             line([(8, 10), (8, 6), (10, 3), (14, 3), (16, 6), (16, 10)])
 
 
-def render_keyboard(name, scheme, width=390):
+def render_keyboard(name, scheme, width=390, category='常用'):
     doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
+    if 'symbolCategoryData' in doc and category not in doc['symbolCategoryData']:
+        raise ValueError(f'Unknown symbol category: {category}')
     total = doc['preeditHeight'] + doc['toolbarHeight'] + doc['keyboardHeight']
     board = doc['keyboardBackgroundStyle']['normalColor']
     image = Image.new('RGB', (round(width * SCALE), round(total * SCALE)), board)
     draw = ImageDraw.Draw(image)
 
-    def paint(reference, rect):
+    def paint(reference, rect, highlighted=False):
         for ref in selected(reference):
             node = doc[ref]
             x, y, w, h = inset(rect, node.get('insets', {}))
-            color = node.get('normalColor')
+            color = node.get('highlightColor', node.get('normalColor')) if highlighted else node.get('normalColor')
             if not color:
                 continue
             if node.get('buttonStyleType') == 'geometry':
@@ -132,7 +141,7 @@ def render_keyboard(name, scheme, width=390):
             paint(node.get('foregroundStyle'), rect)
             return
         if node['type'] == 'subClassifiedSymbols':
-            values = doc['常用']
+            values = doc[category]
             rows, cols = node['maximumRow'], node['maximumColumn']
         elif node['type'] in ('symbols', 'classifiedSymbols'):
             values = doc[node['dataSource']]
@@ -144,16 +153,18 @@ def render_keyboard(name, scheme, width=390):
         foreground = dict(doc[cell_style['foregroundStyle']])
         for i, label in enumerate(values):
             cx, cy = x + (i % cols) * w / cols, y + (i // cols) * h / rows
+            label = label if isinstance(label, str) else label['label']
+            is_selected = node['type'] == 'classifiedSymbols' and label == category
+            paint(cell_style.get('backgroundStyle'), (cx, cy, w / cols, h / rows), highlighted=is_selected)
             if node.get('displaySeparatorLine'):
                 separator = node['separatorLineColor']
                 if i % cols:
                     draw.line((cx * SCALE, cy * SCALE, cx * SCALE, (cy + h / rows) * SCALE), fill=separator, width=1)
                 if i >= cols:
                     draw.line((cx * SCALE, cy * SCALE, (cx + w / cols) * SCALE, cy * SCALE), fill=separator, width=1)
-            label = label if isinstance(label, str) else label['label']
             size = foreground['fontSize']
             draw.text(((cx + w / cols / 2) * SCALE, (cy + h / rows / 2) * SCALE), label,
-                      font=font(size, label), fill=foreground['normalColor'], anchor='mm')
+                      font=font(size, label), fill=foreground.get('highlightColor', foreground['normalColor']) if is_selected else foreground['normalColor'], anchor='mm')
 
     for field, offset, height, region_style in (
         ('toolbarLayout', doc['preeditHeight'], doc['toolbarHeight'], 'toolbarStyle'),
@@ -168,6 +179,7 @@ def render_keyboard(name, scheme, width=390):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=SKIN / 'demo.png')
+    parser.add_argument('--category', choices=('常用', '中文', '英文'), default='常用', help='selected category shown in the symbol diagram')
     args = parser.parse_args()
     gap, margin, title_height = 18, 24, 52
     board_width, board_height = 390, 281
@@ -180,7 +192,7 @@ def main():
         for column, (name, label) in enumerate((('pinyinPortrait', '主界面'), ('numericPortrait', '数字'), ('symbolicPortrait', '符号'))):
             x, y = margin + column * (board_width + gap), margin + title_height + row * (board_height + 36)
             draw.text((x * SCALE, y * SCALE), label + (' / 浅色' if row == 0 else ' / 深色'), font=font(13, label), fill='#747974')
-            image.paste(render_keyboard(name, scheme), (x * SCALE, (y + 26) * SCALE))
+            image.paste(render_keyboard(name, scheme, category=args.category), (x * SCALE, (y + 26) * SCALE))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     image.save(args.output, optimize=True)
     print(f'Rendered configuration diagram: {args.output}')
