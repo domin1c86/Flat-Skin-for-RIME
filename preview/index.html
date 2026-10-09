@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>元书输入法 · 三种皮肤风格预览</title>
+  <style>
+    :root { color-scheme: light; --page:#f7f7f5; --ink:#242725; --muted:#747974; --line:#dedfd9; --surface:#fff; --selected:#292e2b; --on-selected:#fff; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--page); color:var(--ink); }
+    body[data-mode="dark"] { color-scheme:dark; --page:#191c1a; --ink:#ecede8; --muted:#a7ada7; --line:#393e39; --surface:#252925; --selected:#e3e8df; --on-selected:#202620; }
+    button,textarea { font:inherit; }
+    button { cursor:pointer; color:inherit; }
+    button:focus-visible,textarea:focus-visible { outline:2px solid #61897a; outline-offset:3px; }
+    button { -webkit-tap-highlight-color:transparent; }
+    .page { max-width:1320px; margin:auto; padding:32px 36px 28px; }
+    header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; }
+    h1 { font-size:32px; font-weight:550; line-height:1.3; letter-spacing:-1px; margin:0 0 10px; }
+    header p { margin:0; color:var(--muted); font-size:14px; line-height:1.8; }
+    .wordmark { flex-shrink:0; font-size:13px; letter-spacing:1px; padding-top:10px; color:var(--muted); }
+    .controls { display:flex; flex-wrap:wrap; gap:24px 36px; align-items:center; margin:24px 0 26px; padding:14px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .control-group { display:flex; align-items:center; gap:12px; }
+    .control-label { font-size:12px; color:var(--muted); }
+    .segments { display:flex; gap:3px; padding:3px; background:var(--surface); border:1px solid var(--line); border-radius:9px; }
+    .segments button { border:0; background:transparent; border-radius:6px; font-size:13px; padding:7px 13px; white-space:nowrap; }
+    .segments button[aria-pressed="true"] { background:var(--selected); color:var(--on-selected); }
+    .comparison { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:26px; }
+    .style-card { min-width:0; }
+    .style-heading { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .style-number { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+    h2 { font-size:19px; font-weight:550; margin:0; }
+    .zoom { margin-left:auto; display:grid; place-items:center; padding:5px; background:transparent; border:0; color:var(--muted); border-radius:5px; }
+    .zoom:hover { color:var(--ink); background:var(--surface); }
+    .style-description { font-size:12px; line-height:1.8; margin:0 0 12px; color:var(--muted); }
+    .device { --board:#e2e3e7; --key:#fff; --system:#e6e6e6; --foreground:#000; --secondary:#74767c; --hint:#98999e; --pressed:#e6e6e6; --system-pressed:#fff; --accent:#007aff; --on-accent:#fff; --edge:#898a8d; --separator:#d1d2d6; --editor:#fff; --radius:8.5; --canvas-width:390; container-type:inline-size; border-radius:18px; background:var(--editor); overflow:hidden; box-shadow:0 0 0 1px #0000000c,0 8px 24px #00000005; color:var(--foreground); }
+    .device[data-style="flat"] { --board:#e4e5e7; --system:#cfd0d2; --secondary:#64666a; --hint:#97999c; --pressed:#eceef1; --system-pressed:#babcc0; --edge:transparent; --separator:#dddfe2; }
+    .device[data-style="warm"] { --board:#f0ece6; --key:#fffaf2; --system:#ddd5c9; --foreground:#302b26; --secondary:#746d61; --hint:#9c9385; --pressed:#e6e0d4; --system-pressed:#ccc2b3; --accent:#768e79; --on-accent:#fffaf2; --edge:#c4b9aa; --separator:#e3dcd0; --editor:#fffdf9; }
+    body[data-mode="dark"] .device[data-style="minimal"] { --board:#2b2b2d; --key:#707070; --system:#4c4c4c; --foreground:#fff; --secondary:#bdbdc5; --hint:#c1c1c6; --pressed:#4c4c4c; --system-pressed:#707070; --accent:#0a84ff; --edge:#000; --separator:#38383a; --editor:#222224; }
+    body[data-mode="dark"] .device[data-style="flat"] { --board:#1b1c1f; --key:#37383c; --system:#292a2e; --foreground:#f4f4f6; --secondary:#b3b4ba; --hint:#9b9da6; --pressed:#51535a; --system-pressed:#45474e; --accent:#0a84ff; --edge:transparent; --separator:#48494f; --editor:#242529; }
+    body[data-mode="dark"] .device[data-style="warm"] { --board:#211e1b; --key:#39332d; --system:#494137; --foreground:#f3e9da; --secondary:#b7ad9f; --hint:#b1a494; --pressed:#51483e; --system-pressed:#615546; --accent:#a9bca0; --on-accent:#211e1b; --edge:#15120f; --separator:#51483e; --editor:#2b2621; }
+    body[data-orientation="landscape"] .device { --canvas-width:680; }
+    .editor { height:96px; padding:16px 18px 12px; }
+    .editor-label { display:flex; align-items:center; justify-content:space-between; color:var(--secondary); font-size:11px; margin-bottom:10px; }
+    .editor textarea { display:block; border:0; padding:0; width:100%; height:48px; resize:none; font-size:17px; line-height:1.5; background:transparent; color:var(--foreground); }
+    .editor textarea::placeholder { color:var(--secondary); opacity:.7; font-size:14px; }
+    .keyboard { --u:calc(100cqw / var(--canvas-width)); background:var(--board); position:relative; }
+    .preedit { height:calc(25 * var(--u)); display:flex; align-items:center; padding:0 calc(8 * var(--u)); color:var(--secondary); font-size:calc(11 * var(--u)); }
+    .toolbar { height:calc(40 * var(--u)); display:flex; align-items:center; gap:calc(3 * var(--u)); padding:0 calc(9 * var(--u)); }
+    .toolbar button { width:calc(38 * var(--u)); height:calc(34 * var(--u)); border:0; border-radius:calc(6 * var(--u)); background:transparent; color:var(--secondary); display:grid; place-items:center; }
+    .toolbar button:hover { background:var(--system); }
+    .toolbar .tool-spacer { flex:1; }
+    .icon { width:1em; height:1em; display:block; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .toolbar .icon { font-size:calc(21 * var(--u)); }
+    .keys { height:calc(216 * var(--u)); padding:0 calc(3 * var(--u)); display:grid; gap:calc(8 * var(--u)); padding-top:calc(4 * var(--u)); padding-bottom:calc(4 * var(--u)); }
+    body[data-orientation="landscape"] .keys { height:calc(160 * var(--u)); gap:calc(6 * var(--u)); padding-top:calc(3 * var(--u)); padding-bottom:calc(3 * var(--u)); }
+    .main-keys { grid-template-rows:repeat(4,minmax(0,1fr)); }
+    .row { display:grid; gap:calc(6 * var(--u)); min-height:0; }
+    .row-top { grid-template-columns:repeat(10,minmax(0,1fr)); }
+    .row-home { grid-template-columns:repeat(9,minmax(0,1fr)); margin-inline:5%; }
+    .row-bottom { grid-template-columns:1.5fr repeat(7,minmax(0,1fr)) 1.5fr; }
+    .row-functions { grid-template-columns:1.5fr 1fr 1fr 3fr 1fr 1fr 1.5fr; }
+    .key { position:relative; min-width:0; min-height:0; display:flex; align-items:center; justify-content:center; border:0; padding:0; border-radius:calc(var(--radius) * var(--u)); background:var(--key); color:var(--foreground); font-size:calc(22.5 * var(--u)); box-shadow:0 calc(1 * var(--u)) 0 var(--edge); user-select:none; -webkit-user-select:none; touch-action:none; }
+    .key.system { background:var(--system); font-size:calc(16 * var(--u)); }
+    .key.accent { background:var(--accent); color:var(--on-accent); }
+    .key .icon { font-size:calc(23 * var(--u)); }
+    .key.has-hint .legend { transform:translateY(calc(4 * var(--u))); }
+    .hint { position:absolute; top:calc(4 * var(--u)); inset-inline:0; text-align:center; font-size:calc(9 * var(--u)); line-height:1; color:var(--hint); pointer-events:none; }
+    body[data-orientation="landscape"] .hint { top:calc(3 * var(--u)); font-size:calc(8 * var(--u)); }
+    .key:active,.key.is-pressed { background:var(--pressed); box-shadow:none; }
+    .key.system:active,.key.system.is-pressed { background:var(--system-pressed); }
+    .key.accent:active,.key.accent.is-pressed { filter:brightness(.88); background:var(--accent); }
+    .key[aria-pressed="true"] { color:var(--accent); }
+    .key.system.selected { background:var(--accent); color:var(--on-accent); }
+    .numeric-keys { grid-template-columns:1.7fr 6.3fr 1.7fr; grid-template-rows:3fr 1fr; gap:calc(6 * var(--u)); }
+    .operators { display:grid; grid-template-rows:repeat(4,1fr); background:var(--system); border-radius:calc(var(--radius) * var(--u)); box-shadow:0 calc(1 * var(--u)) 0 var(--edge); overflow:hidden; }
+    .operators .key { background:transparent; box-shadow:none; }
+    .digits { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(0,1fr)); gap:calc(6 * var(--u)); }
+    .numeric-side { display:grid; grid-template-rows:repeat(3,minmax(0,1fr)); gap:calc(6 * var(--u)); }
+    .numeric-bottom { grid-column:1 / -1; display:grid; grid-template-columns:1.7fr 2.1fr 2.1fr 2.1fr 1.7fr; gap:calc(6 * var(--u)); }
+    .symbol-keys { grid-template-columns:1.6fr 8.4fr; gap:calc(6 * var(--u)); }
+    .symbol-sidebar { display:grid; grid-template-rows:3fr 1fr 1fr; gap:calc(6 * var(--u)); min-height:0; }
+    .categories { background:var(--system); display:grid; grid-template-rows:repeat(3,1fr); border-radius:calc(var(--radius) * var(--u)); overflow:hidden; box-shadow:0 calc(1 * var(--u)) 0 var(--edge); }
+    .categories .key { border-radius:0; box-shadow:none; }
+    .categories .key.selected { background:color-mix(in srgb,var(--foreground) 8%,var(--system)); color:var(--foreground); }
+    .symbol-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(5,minmax(0,1fr)); gap:1px; background:var(--separator); overflow:hidden; border-radius:calc(var(--radius) * var(--u)); }
+    .symbol-grid .key { border-radius:0; box-shadow:none; font-size:calc(20 * var(--u)); }
+    .home-area { height:calc(34 * var(--u)); display:grid; align-items:end; justify-content:center; padding-bottom:calc(8 * var(--u)); }
+    .home-indicator { width:calc(120 * var(--u)); height:calc(4 * var(--u)); border-radius:99px; background:var(--foreground); opacity:.3; }
+    .feedback { position:absolute; top:calc(1 * var(--u)); right:calc(9 * var(--u)); font-size:calc(11 * var(--u)); color:var(--secondary); pointer-events:none; }
+    .tool-panel { position:absolute; inset:calc(65 * var(--u)) calc(6 * var(--u)) calc(34 * var(--u)); z-index:2; padding:calc(16 * var(--u)); border-radius:calc(12 * var(--u)); background:var(--key); box-shadow:0 3px 18px #00000018; overflow:auto; }
+    .panel-header { display:flex; justify-content:space-between; align-items:center; font-size:calc(17 * var(--u)); margin-bottom:calc(12 * var(--u)); }
+    .panel-close { background:transparent; border:0; padding:calc(6 * var(--u)); font-size:calc(19 * var(--u)); }
+    .tool-panel p { font-size:calc(13 * var(--u)); line-height:1.7; margin:0; color:var(--secondary); }
+    .emoji-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:calc(8 * var(--u)); }
+    .emoji-grid button { padding:calc(5 * var(--u)); font-size:calc(25 * var(--u)); background:transparent; border:0; border-radius:calc(5 * var(--u)); }
+    .emoji-grid button:hover { background:var(--system); }
+    .dismissed { height:calc(216 * var(--u)); display:grid; place-content:center; gap:calc(12 * var(--u)); text-align:center; font-size:calc(14 * var(--u)); color:var(--secondary); }
+    body[data-orientation="landscape"] .dismissed { height:calc(160 * var(--u)); }
+    .dismissed button { border:0; padding:calc(8 * var(--u)) calc(14 * var(--u)); background:var(--key); border-radius:calc(7 * var(--u)); }
+    .style-footer { margin-top:18px; display:flex; align-items:center; gap:7px; font-size:11px; color:var(--muted); }
+    .swatch { width:12px; height:12px; border-radius:50%; border:1px solid #80808025; background:var(--swatch); }
+    .style-footer span:last-child { margin-left:auto; }
+    .help { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; margin-top:34px; padding-top:20px; border-top:1px solid var(--line); font-size:12px; line-height:1.8; color:var(--muted); }
+    .help p { margin:0; }
+    .zoom-dialog { border:1px solid var(--line); padding:22px; width:min(750px,calc(100% - 24px)); max-height:calc(100dvh - 24px); border-radius:18px; background:var(--page); color:var(--ink); overflow:auto; }
+    .zoom-dialog::backdrop { background:#0008; backdrop-filter:blur(4px); }
+    .zoom-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .zoom-header h2 { font-size:17px; }
+    .dialog-close { border:0; background:var(--surface); border-radius:7px; padding:7px 12px; font-size:13px; }
+    .zoom-dialog .device { max-width:390px; margin-inline:auto; }
+    body[data-orientation="landscape"] .zoom-dialog .device { max-width:680px; }
+    @media (max-width:860px) { .page { padding:32px 20px 24px; } .comparison { grid-template-columns:1fr; gap:36px; max-width:460px; margin:auto; } h1 { font-size:29px; } .wordmark { display:none; } .controls { gap:16px 24px; } .style-description { margin-bottom:12px; } }
+    @media (max-width:400px) { .page { padding-inline:14px; } .controls { align-items:flex-start; } .control-group { gap:8px; } .segments button { padding:7px 11px; } h1 { font-size:26px; } }
+    @media (prefers-reduced-motion:no-preference) { .segments button { transition:background .15s,color .15s; } }
+  </style>
+</head>
+<body data-mode="light" data-orientation="portrait">
+  <main class="page">
+    <header>
+      <div><h1>三种风格，同一套键位。</h1><p>为元书输入法设计。切换界面，找到你喜欢的手感与颜色。</p></div>
+      <span class="wordmark">元书 / iPhone</span>
+    </header>
+    <section class="controls" aria-label="统一预览设置">
+      <div class="control-group"><span class="control-label">界面</span><div class="segments" role="group" aria-label="键盘界面"><button type="button" data-setting="page" data-value="main" aria-pressed="true">主界面</button><button type="button" data-setting="page" data-value="numeric" aria-pressed="false">数字</button><button type="button" data-setting="page" data-value="symbol" aria-pressed="false">符号</button></div></div>
+      <div class="control-group"><span class="control-label">颜色</span><div class="segments" role="group" aria-label="颜色模式"><button type="button" data-setting="mode" data-value="light" aria-pressed="true">浅色</button><button type="button" data-setting="mode" data-value="dark" aria-pressed="false">深色</button></div></div>
+      <div class="control-group"><span class="control-label">方向</span><div class="segments" role="group" aria-label="屏幕方向"><button type="button" data-setting="orientation" data-value="portrait" aria-pressed="true">竖屏</button><button type="button" data-setting="orientation" data-value="landscape" aria-pressed="false">横屏</button></div></div>
+    </section>
+    <section class="comparison" aria-label="三种皮肤对照"></section>
+    <footer class="help"><p>点击按键试输入 · 字母上划输入上标 · 右上角可放大查看</p><p>设计预览，功能使用本地演示；最终效果以元书实机为准。</p></footer>
+  </main>
+  <dialog class="zoom-dialog" aria-labelledby="zoom-title"><div class="zoom-header"><h2 id="zoom-title"></h2><button class="dialog-close" type="button">关闭</button></div><div class="zoom-content"></div></dialog>
+  <script>
+    'use strict';
+    // Every skin renders the same keyboard model; only CSS palette tokens vary.
+    const styles = [
+      { id:'minimal', name:'现有极简', description:'熟悉的圆角与轻巧底边，保留原有的清晰层次。', detail:'原有底边', colors:{light:['#e2e3e7','#ffffff','#e6e6e6','#007aff'],dark:['#2b2b2d','#707070','#4c4c4c','#0a84ff']} },
+      { id:'flat', name:'扁平灰白', description:'灰白分明，去掉立体边缘，让键盘更安静。', detail:'无立体底边', colors:{light:['#e4e5e7','#ffffff','#cfd0d2','#007aff'],dark:['#1b1c1f','#37383c','#292a2e','#0a84ff']} },
+      { id:'warm', name:'柔和暖色', description:'奶油白、暖灰与鼠尾草绿，给输入一点温度。', detail:'柔和底边', colors:{light:['#f0ece6','#fffaf2','#ddd5c9','#768e79'],dark:['#211e1b','#39332d','#494137','#a9bca0']} }
+    ];
+    const state = { page:'main', mode:'light', orientation:'portrait', category:'common', locked:false, shift:0, language:'zh', text:'', start:0, end:0, panel:null, dismissed:false, symbolReturn:'main' };
+    const icons = {
+      menu:'<rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="15" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="15" width="6" height="6" rx="1.5"/><rect x="15" y="15" width="6" height="6" rx="1.5"/>',
+      emoji:'<circle cx="12" cy="12" r="9"/><path d="M8 14.5q4 4 8 0"/><path d="M8.5 8.5v1M15.5 8.5v1"/>',
+      clipboard:'<rect x="7" y="7" width="13" height="14" rx="3"/><path d="M7 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2M11 12h5M11 16h5"/>',
+      script:'<path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 16"/>',
+      down:'<path d="m5 9 7 7 7-7"/>',
+      shift:'<path d="m12 3 9 9h-6v9H9v-9H3Z"/>',
+      caps:'<path d="m12 2 9 9h-6v6H9v-6H3ZM9 21h6"/>',
+      delete:'<path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-7-7Z"/><path d="m11 9 6 6m0-6-6 6"/>',
+      enter:'<path d="M20 5v7a4 4 0 0 1-4 4H4m5-5-5 5 5 5"/>',
+      space:'<path d="M4 10v5h16v-5"/>',
+      lock:'<rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+      unlock:'<rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
+      expand:'<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>'
+    };
+    const hints = Object.fromEntries(Array.from('qwertyuiopasdfghjklzxcvbnm').map((c,i)=>[c,Array.from('1234567890~!@#%“”*?()-_:;`')[i]]));
+    const symbols = {
+      common:['《','，','。','？','！','、','…','(',')','》','“','”','@','#','.','/','.com','~','—',':'],
+      chinese:['，','。','？','！','、','；','：','…','（','）','《','》','“','”','‘','’','【','】','「','」'],
+      english:[',','.','?','!',';',':',"'",'"','(',')','[',']','{','}','@','#','+','-','_','/']
+    };
+    const panels = { menu:{title:'键盘菜单',text:'这是菜单入口的设计演示。正式皮肤将在元书中打开键盘菜单。'}, clipboard:{title:'剪贴板',text:'这是剪贴板入口的设计演示，不读取系统剪贴板。'}, script:{title:'脚本',text:'这是脚本入口的设计演示，不执行脚本。'}, emoji:{title:'Emoji'} };
+    const comparison = document.querySelector('.comparison');
+    const dialog = document.querySelector('.zoom-dialog');
+    let lastShiftTime = 0;
+    let feedbackTimer;
+    const escapeHTML = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${icons[name]}</svg>`;
+    function key(label, action='insert', value=label, kind='', hint='', pressed=null) {
+      const legend = label.startsWith('icon:') ? icon(label.slice(5)) : `<span class="legend">${escapeHTML(label)}</span>`;
+      const accessible = label.startsWith('icon:') ? ({shift:'Shift',caps:'大写锁定',delete:'删除',enter:'回车',space:'空格',lock:'符号锁定',unlock:'符号锁定'}[label.slice(5)] || label.slice(5)) : label;
+      return `<button type="button" class="key ${kind} ${hint?'has-hint':''}" data-action="${action}" data-value="${escapeHTML(value)}" ${hint?`data-hint="${escapeHTML(hint)}" title="上划：${escapeHTML(hint)}"`:''} aria-label="${escapeHTML(accessible)}${hint?`，上划输入 ${escapeHTML(hint)}`:''}" ${pressed!==null?`aria-pressed="${pressed}"`:''}>${hint?`<span class="hint">${escapeHTML(hint)}</span>`:''}${legend}</button>`;
+    }
+    function mainKeys() {
+      const letters = row => Array.from(row).map(c=>key(state.shift?c.toUpperCase():c,'letter',c,'',hints[c])).join('');
+      return `<div class="keys main-keys"><div class="row row-top">${letters('qwertyuiop')}</div><div class="row row-home">${letters('asdfghjkl')}</div><div class="row row-bottom">${key('icon:'+(state.shift===2?'caps':'shift'),'shift','','system','',state.shift>0)}${letters('zxcvbnm')}${key('icon:delete','delete','','system')}</div><div class="row row-functions">${key('符号','page','symbol','system')}${key('123','page','numeric','system')}${key(state.language==='zh'?'，':',')}${key('icon:space','space')}${key(state.language==='zh'?'。':'.')}${key(state.language==='zh'?'中':'英','language','','system','',state.language==='en')}${key('icon:enter','enter','','system accent')}</div></div>`;
+    }
+    function numericKeys() {
+      return `<div class="keys numeric-keys"><div class="operators">${['+','-','*','/'].map(c=>key(c)).join('')}</div><div class="digits">${Array.from('123456789').map(c=>key(c)).join('')}</div><div class="numeric-side">${key('icon:delete','delete','','system')}${key('.','insert','.','system')}${key('@','insert','@','system')}</div><div class="numeric-bottom">${key('符号','page','symbol','system')}${key('返回','page','main','system')}${key('0')}${key('空格','space','','system')}${key('icon:enter','enter','','system accent')}</div></div>`;
+    }
+    function symbolKeys() {
+      return `<div class="keys symbol-keys"><div class="symbol-sidebar"><div class="categories">${[['common','常用'],['chinese','中文'],['english','英文']].map(([value,label])=>key(label,'category',value,'system'+(state.category===value?' selected':''),'',state.category===value)).join('')}</div>${key('icon:'+(state.locked?'lock':'unlock'),'lock','','system','',state.locked)}${key('返回','return','','system')}</div><div class="symbol-grid">${symbols[state.category].map(c=>key(c,'symbol',c)).join('')}</div></div>`;
+    }
+    function toolbar() {
+      return `<div class="toolbar" aria-label="元书功能入口">${[['menu','键盘菜单'],['emoji','Emoji'],['clipboard','剪贴板'],['script','脚本']].map(([name,label])=>`<button type="button" data-action="panel" data-value="${name}" aria-label="${label}">${icon(name)}</button>${name==='menu'?'<span class="tool-spacer"></span>':''}`).join('')}<button type="button" data-action="dismiss" aria-label="收起键盘">${icon('down')}</button></div>`;
+    }
+    function panelMarkup() {
+      if (!state.panel) return '';
+      const panel = panels[state.panel];
+      return `<section class="tool-panel" aria-label="${panel.title}演示"><div class="panel-header"><span>${panel.title}</span><button type="button" data-action="closePanel" class="panel-close" aria-label="关闭演示面板">×</button></div>${state.panel==='emoji'?`<div class="emoji-grid">${['😀','😊','🥰','😎','🥳','🤔','👍','👏','❤️','✨','🎉','🌿','☕','🌙','🫶'].map(c=>`<button type="button" data-action="emoji" data-value="${c}" aria-label="${c}">${c}</button>`).join('')}</div>`:`<p>${panel.text}</p>`}</section>`;
+    }
+    function keyboardMarkup() {
+      return `<div class="preedit">${state.language==='zh'?'中文':'English'}${state.shift===2?' · 大写锁定':''}</div>${toolbar()}${state.dismissed?'<div class="dismissed"><span>键盘已收起</span><button type="button" data-action="restore">展开键盘</button></div>':state.page==='main'?mainKeys():state.page==='numeric'?numericKeys():symbolKeys()}<div class="home-area" aria-hidden="true"><div class="home-indicator"></div></div><span class="feedback" role="status"></span>${state.dismissed?'':panelMarkup()}`;
+    }
+    function deviceMarkup(style) {
+      return `<div class="device" data-style="${style.id}"><div class="editor"><div class="editor-label"><span>试输入</span><span>本地演示</span></div><textarea aria-label="${style.name}输入演示" placeholder="从任意一套键盘开始输入" spellcheck="false"></textarea></div><div class="keyboard">${keyboardMarkup()}</div></div>`;
+    }
+    function render() {
+      document.body.dataset.mode=state.mode;
+      document.body.dataset.orientation=state.orientation;
+      document.querySelectorAll('[data-setting]').forEach(button=>button.setAttribute('aria-pressed',String(state[button.dataset.setting]===button.dataset.value)));
+      document.querySelectorAll('.keyboard').forEach(element=>element.innerHTML=keyboardMarkup());
+      document.querySelectorAll('.style-footer').forEach(element=>{
+        const style=styles.find(item=>item.id===element.dataset.style);
+        element.innerHTML=style.colors[state.mode].map(color=>`<span class="swatch" style="--swatch:${color}" aria-hidden="true"></span>`).join('')+`<span>8.5 pt 圆角 · ${style.detail}</span>`;
+      });
+      syncText();
+    }
+    function syncText() {
+      document.querySelectorAll('.editor textarea').forEach(textarea=>{
+        const changed=textarea.value!==state.text;
+        if (changed) textarea.value=state.text;
+        if (changed || document.activeElement!==textarea) { textarea.setSelectionRange(state.start,state.end); textarea.scrollTop=textarea.scrollHeight; }
+      });
+    }
+    function feedback(message) {
+      clearTimeout(feedbackTimer);
+      document.querySelectorAll('.feedback').forEach(element=>element.textContent=message);
+      feedbackTimer=setTimeout(()=>document.querySelectorAll('.feedback').forEach(element=>element.textContent=''),1100);
+    }
+    function insert(text) {
+      state.text=state.text.slice(0,state.start)+text+state.text.slice(state.end);
+      state.start+=text.length;
+      state.end=state.start;
+      syncText();
+    }
+    function changePage(page) {
+      if (page==='symbol' && state.page!=='symbol') state.symbolReturn=state.page;
+      state.page=page; state.panel=null; state.dismissed=false; render();
+    }
+    function activate(button, swiped=false) {
+      const {action,value,hint}=button.dataset;
+      if (swiped && hint) { insert(hint); feedback('上划输入 '+hint); return; }
+      switch (action) {
+        case 'letter': insert(state.shift?value.toUpperCase():value); if(state.shift===1){state.shift=0;render();} break;
+        case 'insert': insert(value); break;
+        case 'symbol': insert(value); if(!state.locked) changePage(state.symbolReturn); break;
+        case 'emoji': insert(value); break;
+        case 'space': insert(' '); break;
+        case 'enter': insert('\n'); break;
+        case 'delete': {
+          if(state.start===state.end && state.start>0) {
+            const segments=typeof Intl.Segmenter==='function'?Array.from(new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(state.text.slice(0,state.start)),part=>part.segment):Array.from(state.text.slice(0,state.start));
+            state.start-=segments.at(-1).length;
+          }
+          insert(''); break;
+        }
+        case 'shift': {
+          const now=Date.now();
+          state.shift=state.shift===2?0:state.shift===1?(now-lastShiftTime<400?2:0):1;
+          lastShiftTime=now;render();break;
+        }
+        case 'language': state.language=state.language==='zh'?'en':'zh';render();break;
+        case 'page': changePage(value);break;
+        case 'return': changePage(state.symbolReturn);break;
+        case 'category': state.category=value;render();break;
+        case 'lock': state.locked=!state.locked;render();break;
+        case 'panel': state.panel=state.panel===value?null:value;state.dismissed=false;render();break;
+        case 'closePanel': state.panel=null;render();break;
+        case 'dismiss': state.dismissed=true;state.panel=null;render();break;
+        case 'restore': state.dismissed=false;render();break;
+      }
+    }
+    comparison.innerHTML=styles.map((style,index)=>`<article class="style-card" aria-labelledby="heading-${style.id}"><div class="style-heading"><span class="style-number">0${index+1}</span><h2 id="heading-${style.id}">${style.name}</h2><button type="button" class="zoom" data-zoom="${style.id}" aria-label="放大${style.name}">${icon('expand')}</button></div><p class="style-description">${style.description}</p>${deviceMarkup(style)}<div class="style-footer" data-style="${style.id}"></div></article>`).join('');
+    document.addEventListener('click',event=>{
+      const setting=event.target.closest('[data-setting]');
+      if(setting){state[setting.dataset.setting]=setting.dataset.value;if(setting.dataset.setting==='page'){state.panel=null;state.dismissed=false;state.symbolReturn='main';}render();return;}
+      const zoom=event.target.closest('[data-zoom]');
+      if(zoom){const style=styles.find(item=>item.id===zoom.dataset.zoom);document.querySelector('#zoom-title').textContent=style.name;document.querySelector('.zoom-content').innerHTML=deviceMarkup(style);syncText();dialog.showModal();return;}
+      if(event.target.closest('.dialog-close')){dialog.close();return;}
+      const button=event.target.closest('[data-action]');
+      if(button) activate(button);
+    });
+    document.addEventListener('input',event=>{
+      if(!event.target.matches('.editor textarea'))return;
+      state.text=event.target.value;state.start=event.target.selectionStart;state.end=event.target.selectionEnd;syncText();
+    });
+    const rememberSelection=event=>{
+      if(event.target.matches('.editor textarea')){state.start=event.target.selectionStart;state.end=event.target.selectionEnd;}
+    };
+    document.addEventListener('select',rememberSelection,true);
+    document.addEventListener('keyup',rememberSelection);
+    document.addEventListener('pointerup',rememberSelection);
+    document.addEventListener('focusin',rememberSelection);
+    // Capture the gesture on its key so dragging outside still completes reliably.
+    const gestures=new Map();
+    const suppressedClicks=new WeakSet();
+    document.addEventListener('click',event=>{
+      const button=event.target.closest('.key');
+      if(button && suppressedClicks.has(button)){event.preventDefault();event.stopPropagation();suppressedClicks.delete(button);}
+    },true);
+    document.addEventListener('pointerdown',event=>{
+      const button=event.target.closest('.key');
+      if(!button || event.button!==0)return;
+      const active=document.activeElement;
+      if(active?.matches('.editor textarea')){state.start=active.selectionStart;state.end=active.selectionEnd;}
+      button.classList.add('is-pressed');
+      button.setPointerCapture(event.pointerId);
+      gestures.set(event.pointerId,{button,x:event.clientX,y:event.clientY});
+      event.preventDefault();
+    });
+    document.addEventListener('pointerup',event=>{
+      const gesture=gestures.get(event.pointerId);
+      if(!gesture)return;
+      gestures.delete(event.pointerId);gesture.button.classList.remove('is-pressed');
+      const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
+      const swiped=dy < -12 && Math.abs(dy)>Math.abs(dx);
+      // Swipes and large drags must not produce a second synthetic click.
+      if(swiped || Math.hypot(dx,dy)>12){
+        suppressedClicks.add(gesture.button);
+        setTimeout(()=>suppressedClicks.delete(gesture.button),0);
+        if(swiped && gesture.button.dataset.hint)activate(gesture.button,true);
+      }
+    });
+    document.addEventListener('pointercancel',event=>{
+      const gesture=gestures.get(event.pointerId);if(gesture)gesture.button.classList.remove('is-pressed');gestures.delete(event.pointerId);
+    });
+    dialog.addEventListener('click',event=>{if(event.target===dialog){const bounds=dialog.getBoundingClientRect();if(event.clientX<bounds.left || event.clientX>bounds.right || event.clientY<bounds.top || event.clientY>bounds.bottom)dialog.close();}});
+    dialog.addEventListener('close',()=>document.querySelector('.zoom-content').replaceChildren());
+    render();
+  </script>
+</body>
+</html>
