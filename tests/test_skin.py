@@ -152,14 +152,15 @@ class GeneratedSkinTests(unittest.TestCase):
                 doc = load('pinyin' + orientation, scheme)
                 for english in (False, True):
                     refs = selected_styles(doc['asciiModeButton']['foregroundStyle'], {'rime$ascii_mode': english})
-                    self.assertEqual([doc[ref]['text'] for ref in refs], ['中', 'A', '/'])
+                    self.assertEqual([doc[ref]['text'] for ref in refs], ['中', '英', '╮', '╰'])
                     self.assertEqual(doc[refs[1 if english else 0]]['normalColor'],
                                      doc['blueButtonBackgroundStyle']['normalColor'] if english else doc['preeditForegroundStyle']['normalColor'])
                     self.assertEqual(doc[refs[0 if english else 1]]['normalColor'], doc['qButtonSwipeLabelForegroundStyle']['normalColor'])
-                    self.assertEqual(doc[refs[2]]['normalColor'], doc[refs[0 if english else 1]]['normalColor'])
-                    self.assertEqual(doc[refs[2]]['highlightColor'], doc[refs[2]]['normalColor'])
-                    self.assertLess(doc[refs[0]]['center']['x'], doc[refs[2]]['center']['x'])
-                    self.assertGreater(doc[refs[1]]['center']['x'], doc[refs[2]]['center']['x'])
+                    for corner in refs[2:]:
+                        self.assertEqual(doc[corner]['normalColor'], doc[refs[0 if english else 1]]['normalColor'])
+                        self.assertEqual(doc[corner]['highlightColor'], doc[corner]['normalColor'])
+                    self.assertGreater(doc[refs[2]]['center']['x'], doc[refs[0]]['center']['x'])
+                    self.assertLess(doc[refs[3]]['center']['x'], doc[refs[1]]['center']['x'])
                     self.assertEqual(doc['phoneAsciiNotification']['foregroundStyle'], doc['asciiModeButton']['foregroundStyle'])
         self.assertEqual(doc['phoneAsciiNotification']['rimeOptionName'], 'ascii_mode')
         self.assertEqual(doc['phoneCommaNotification']['action'], {'symbol': ','})
