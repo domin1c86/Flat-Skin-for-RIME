@@ -147,10 +147,20 @@ class GeneratedSkinTests(unittest.TestCase):
         self.assertEqual(doc['symbolReturnButton']['action'], 'returnLastKeyboard')
 
     def test_language_initial_states_and_notifications(self):
-        doc = load('pinyinPortrait')
-        for english, text in ((False, '中'), (True, '英')):
-            refs = selected_styles(doc['asciiModeButton']['foregroundStyle'], {'rime$ascii_mode': english})
-            self.assertEqual(doc[refs[0]]['text'], text)
+        for scheme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('pinyin' + orientation, scheme)
+                for english in (False, True):
+                    refs = selected_styles(doc['asciiModeButton']['foregroundStyle'], {'rime$ascii_mode': english})
+                    self.assertEqual([doc[ref]['text'] for ref in refs], ['中', 'A', '/'])
+                    self.assertEqual(doc[refs[1 if english else 0]]['normalColor'],
+                                     doc['blueButtonBackgroundStyle']['normalColor'] if english else doc['preeditForegroundStyle']['normalColor'])
+                    self.assertEqual(doc[refs[0 if english else 1]]['normalColor'], doc['qButtonSwipeLabelForegroundStyle']['normalColor'])
+                    self.assertEqual(doc[refs[2]]['normalColor'], doc[refs[0 if english else 1]]['normalColor'])
+                    self.assertEqual(doc[refs[2]]['highlightColor'], doc[refs[2]]['normalColor'])
+                    self.assertLess(doc[refs[0]]['center']['x'], doc[refs[2]]['center']['x'])
+                    self.assertGreater(doc[refs[1]]['center']['x'], doc[refs[2]]['center']['x'])
+                    self.assertEqual(doc['phoneAsciiNotification']['foregroundStyle'], doc['asciiModeButton']['foregroundStyle'])
         self.assertEqual(doc['phoneAsciiNotification']['rimeOptionName'], 'ascii_mode')
         self.assertEqual(doc['phoneCommaNotification']['action'], {'symbol': ','})
         self.assertEqual(doc['phonePeriodNotification']['action'], {'symbol': '.'})

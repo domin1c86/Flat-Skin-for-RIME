@@ -14,9 +14,9 @@ SCALE = 3
 CONDITIONS = {'$returnKeyType': 0, 'rime$ascii_mode': False, '$symbolicKeyboardLockState': False}
 
 
-def font(size, text=''):
+def font(size, text='', weight='regular'):
     cjk = any(ord(char) > 0x2ff for char in text)
-    candidates = ([Path('C:/Windows/Fonts/msyh.ttc')] if cjk else []) + [
+    candidates = ([Path('C:/Windows/Fonts/msyhbd.ttc' if weight != 'regular' else 'C:/Windows/Fonts/msyh.ttc')] if cjk else []) + ([Path('C:/Windows/Fonts/segoeuib.ttf')] if weight != 'regular' else []) + [
         Path('C:/Windows/Fonts/segoeui.ttf'), Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')]
     for candidate in candidates:
         if candidate.is_file():
@@ -121,7 +121,7 @@ def render_keyboard(name, scheme, width=390, category='常用'):
                 size = node.get('fontSize', 16)
                 if node.get('buttonStyleType') == 'text':
                     label = node.get('text', '')
-                    draw.text((point[0] * SCALE, point[1] * SCALE), label, font=font(size, label), fill=color, anchor='mm')
+                    draw.text((point[0] * SCALE, point[1] * SCALE), label, font=font(size, label, node.get('fontWeight', 'regular')), fill=color, anchor='mm')
                 elif node.get('buttonStyleType') == 'systemImage':
                     icon(draw, node['systemImageName'], point, size, color)
 

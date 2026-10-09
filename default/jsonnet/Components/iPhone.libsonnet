@@ -14,8 +14,8 @@ local returnForeground = [
   Style.when('$returnKeyType', std.range(1, 11), 'phoneReturnText'),
 ];
 local languageForeground = [
-  Style.when('rime$ascii_mode', false, 'phoneChineseLabel'),
-  Style.when('rime$ascii_mode', true, 'phoneEnglishLabel'),
+  Style.when('rime$ascii_mode', false, ['phoneChineseLabel', 'phoneInactiveEnglishLabel', 'phoneLanguageDivider']),
+  Style.when('rime$ascii_mode', true, ['phoneInactiveChineseLabel', 'phoneEnglishLabel', 'phoneLanguageDivider']),
 ];
 local commaForeground = [
   Style.when('rime$ascii_mode', false, 'phoneChineseCommaLabel'),
@@ -68,8 +68,16 @@ local text(label, extra={}) = Style.text({
         backgroundStyle: Theme.blueBackgroundName, foregroundStyle: returnForeground,
         action: 'enter',
       },
-      phoneChineseLabel: text('中'),
-      phoneEnglishLabel: text('英', { normalColor: colors.blueButtonBackgroundColor }),
+      phoneChineseLabel: text('中', { fontSize: 12, center: { x: 0.28, y: 0.32 } }),
+      phoneInactiveChineseLabel: text('中', { fontSize: 12, center: { x: 0.28, y: 0.32 },
+        normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor }),
+      phoneEnglishLabel: text('A', { fontSize: 14, center: { x: 0.74, y: 0.70 },
+        normalColor: colors.blueButtonBackgroundColor, highlightColor: colors.blueButtonBackgroundColor }),
+      phoneInactiveEnglishLabel: text('A', { fontSize: 14, center: { x: 0.74, y: 0.70 },
+        normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor }),
+      // 独立斜线前景层，居中且短于键帽高度，两端留白。
+      phoneLanguageDivider: text('/', { fontSize: 36, fontWeight: 'semibold', center: { x: 0.51, y: 0.5 },
+        normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor }),
       phoneAsciiNotification: optionNotification(Theme.systemBackgroundName, languageForeground, Keys.asciiModeButton.action),
       phoneChineseCommaLabel: text('，', { fontSize: fonts.keyLabel }),
       phoneEnglishCommaLabel: text(',', { fontSize: fonts.keyLabel }),
