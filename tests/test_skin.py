@@ -162,11 +162,11 @@ class GeneratedSkinTests(unittest.TestCase):
         doc = load('pinyinPortrait')
         self.assertEqual(doc['toolbarEmojiButton']['action'], {'keyboardType': 'emojis'})
         self.assertEqual(doc['toolbarPasteboardButton']['action'], {'shortcut': '#showPasteboardView'})
-        self.assertEqual(doc['toolbarScriptButton']['action'], {'shortcut': '#toggleScriptView'})
+        self.assertNotIn('toolbarScriptButton', doc)
 
     def test_main_toolbar_order_actions_and_small_width(self):
-        expected = ['toolbarMenuButton', 'toolbarSpacer', 'toolbarEmojiButton',
-                    'toolbarPasteboardButton', 'toolbarScriptButton', 'toolbarSymbolicButton', 'toolbarSchemaButton']
+        expected = ['toolbarMenuButton', 'toolbarSpacer', 'toolbarSymbolicButton', 'toolbarEmojiButton',
+                    'toolbarPasteboardButton', 'toolbarSchemaButton']
         for scheme in ('light', 'dark'):
             for orientation in ('Portrait', 'Landscape'):
                 doc = load('pinyin' + orientation, scheme)

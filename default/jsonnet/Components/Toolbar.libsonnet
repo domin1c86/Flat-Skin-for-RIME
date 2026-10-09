@@ -96,12 +96,12 @@ local backspaceName = 'verticalBackspaceButtonStyle';
           [{ Cell: menuButtonName }]
           + (if supportsSplit then [{ Cell: splitToggleButtonName }] else [])
           + [{ Cell: toolbarSpacerName }]
+          + (if useMainControls then [{ Cell: 'toolbarSymbolicButton' }] else [])
           + (if phoneControls then [
               { Cell: 'toolbarEmojiButton' }, { Cell: 'toolbarPasteboardButton' },
-              { Cell: 'toolbarScriptButton' },
-            ] else [])
+            ] + (if useMainControls then [] else [{ Cell: 'toolbarScriptButton' }]) else [])
           + (if useMainControls then [
-              { Cell: 'toolbarSymbolicButton' }, { Cell: 'toolbarSchemaButton' },
+              { Cell: 'toolbarSchemaButton' },
             ] else [{ Cell: dismissButtonName }])
         } },
       ],
