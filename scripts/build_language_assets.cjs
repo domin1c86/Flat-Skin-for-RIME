@@ -24,11 +24,16 @@ function artwork(active, inactive, english) {
     fs.writeFileSync(path.join(folder,'language.png'),atlas);
     const descriptor = Object.fromEntries(['chinese','english'].map((name,i)=>[name,{rect:{x:i*width,y:0,width,height},insets:{top:0,left:0,bottom:0,right:0}}]));
     fs.writeFileSync(path.join(folder,'language.yaml'),JSON.stringify(descriptor,null,2)+'\n');
-    embedded[scheme] = 'data:image/png;base64,'+atlas.toString('base64');
+    // The preview must use individual tiles. An SVG viewBox is a camera,
+    // not a crop: aspect-fit letterboxing can reveal the adjacent atlas tile.
+    embedded[scheme] = Object.fromEntries(await Promise.all(['zh','en'].map(async (language,i)=> {
+      const tile = await sharp(atlas).extract({left:i*width,top:0,width,height}).png().toBuffer();
+      return [language,'data:image/png;base64,'+tile.toString('base64')];
+    })));
   }
   const preview = path.join(root,'preview/index.html');
   const html = fs.readFileSync(preview,'utf8');
   if (!html.includes('/* LANGUAGE_ATLASES_START */')) throw new Error('Missing preview atlas markers');
-  fs.writeFileSync(preview,html.replace(/\/\* LANGUAGE_ATLASES_START \*\/[\s\S]*?\/\* LANGUAGE_ATLASES_END \*\//,`/* LANGUAGE_ATLASES_START */\n    const languageAtlases = ${JSON.stringify(embedded)};\n    /* LANGUAGE_ATLASES_END */`));
-  console.log('Built two language atlases and synchronized the offline preview.');
+  fs.writeFileSync(preview,html.replace(/\/\* LANGUAGE_ATLASES_START \*\/[\s\S]*?\/\* LANGUAGE_ATLASES_END \*\//,`/* LANGUAGE_ATLASES_START */\n    const languageImages = ${JSON.stringify(embedded)};\n    /* LANGUAGE_ATLASES_END */`));
+  console.log('Built two native language atlases and four isolated offline preview images.');
 })().catch(error=>{console.error(error);process.exit(1)});

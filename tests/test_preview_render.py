@@ -1,6 +1,10 @@
 """Pixel regressions for the native classification highlight's rounded inset."""
 import importlib.util
+import base64
+import io
+import json
 from pathlib import Path
+import re
 import sys
 import unittest
 
@@ -58,6 +62,24 @@ class ClassificationHighlightTests(unittest.TestCase):
             for orientation in ('Portrait', 'Landscape'):
                 doc = load('pinyin' + orientation, scheme)
                 self.assertEqual(doc['phoneChineseModeIcon']['insets'], doc['phoneEnglishModeIcon']['insets'])
+
+    def test_preview_language_images_are_isolated_native_tiles(self):
+        """Wider aspect-fit viewports must never reveal the adjacent language."""
+        from PIL import Image
+        html = (ROOT / 'preview' / 'index.html').read_text(encoding='utf-8')
+        match = re.search(r'const languageImages = (\{[^\n]+\});', html)
+        self.assertIsNotNone(match)
+        images = json.loads(match.group(1))
+        for scheme in ('light', 'dark'):
+            atlas = Image.open(ROOT / 'default' / scheme / 'resources' / 'language.png').convert('RGBA')
+            for index, language in enumerate(('zh', 'en')):
+                with self.subTest(scheme=scheme, language=language):
+                    uri = images[scheme][language]
+                    self.assertTrue(uri.startswith('data:image/png;base64,'))
+                    tile = Image.open(io.BytesIO(base64.b64decode(uri.split(',', 1)[1]))).convert('RGBA')
+                    self.assertEqual(tile.size, (380, 410))
+                    expected = atlas.crop((index * 380, 0, (index + 1) * 380, 410))
+                    self.assertEqual(tile.tobytes(), expected.tobytes())
 
 
 if __name__ == '__main__':
