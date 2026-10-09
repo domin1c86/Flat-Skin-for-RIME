@@ -81,6 +81,32 @@ class ClassificationHighlightTests(unittest.TestCase):
                     expected = atlas.crop((index * 380, 0, (index + 1) * 380, 410))
                     self.assertEqual(tile.tobytes(), expected.tobytes())
 
+    def test_chinese_punctuation_ink_is_centered_in_each_key(self):
+        from PIL import Image
+        for scheme in ('light', 'dark'):
+            atlas = Image.open(ROOT / 'default' / scheme / 'resources' / 'punctuation.png').convert('RGBA')
+            for index in range(2):
+                tile = atlas.crop((index * 200, 0, (index + 1) * 200, 200))
+                left, top, right, bottom = tile.getchannel('A').getbbox()
+                self.assertAlmostEqual((left + right) / 2, 100, delta=.5)
+                self.assertAlmostEqual((top + bottom) / 2, 100, delta=.5)
+            for orientation, width in (('Portrait', 320), ('Portrait', 390), ('Landscape', 680)):
+                doc = load('pinyin' + orientation, scheme)
+                rects = dict(layout_rectangles(doc, 'keyboardLayout', width, doc['keyboardHeight']))
+                image = render_keyboard('pinyin' + orientation, scheme, width=width)
+                for key in ('chineseCommaButton', 'chinesePeriodButton'):
+                    x, y, w, h = rects[key]
+                    y += doc['preeditHeight'] + doc['toolbarHeight']
+                    crop = image.crop(tuple(round(v * SCALE) for v in (x, y, x + w, y + h)))
+                    foreground = ImageColor.getrgb('#000000' if scheme == 'light' else '#F4F4F6')
+                    mask = Image.new('L', crop.size)
+                    # Antialiasing can leave no pixel exactly at the foreground tint.
+                    mask.putdata([255 if max(abs(pixel[i] - foreground[i]) for i in range(3)) < 64 else 0
+                                  for pixel in crop.get_flattened_data()])
+                    left, top, right, bottom = mask.getbbox()
+                    self.assertAlmostEqual((left + right) / 2, crop.width / 2, delta=1)
+                    self.assertAlmostEqual((top + bottom) / 2, crop.height / 2, delta=1)
+
 
 if __name__ == '__main__':
     unittest.main()

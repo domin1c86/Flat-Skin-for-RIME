@@ -53,6 +53,13 @@ local text(label, extra={}) = Style.text({
       normalImage: { file: 'language', image: state },
       highlightImage: { file: 'language', image: state },
     });
+    // 20pt 方形画布内按笔画边界居中，不受全角字形的左下留白影响。
+    local punctuationIcon(name) = Style.fileImage({
+      contentMode: 'scaleAspectFit',
+      insets: { top: if isPortrait then 17 else 10, bottom: if isPortrait then 17 else 10, left: 3, right: 3 },
+      normalImage: { file: 'punctuation', image: name },
+      highlightImage: { file: 'punctuation', image: name },
+    });
     Style.merge([
     Preedit.new(), Toolbar.new(phoneControls=true, mainControls=mainControls),
     Theme.shared(metrics.keyInsets.iPhone[if isPortrait then 'portrait' else 'landscape']),
@@ -80,9 +87,9 @@ local text(label, extra={}) = Style.text({
       phoneChineseModeIcon: languageIcon('chinese'),
       phoneEnglishModeIcon: languageIcon('english'),
       phoneAsciiNotification: optionNotification(Theme.systemBackgroundName, languageForeground, Keys.asciiModeButton.action),
-      phoneChineseCommaLabel: text('，', { fontSize: fonts.keyLabel }),
+      phoneChineseCommaLabel: punctuationIcon('comma'),
       phoneEnglishCommaLabel: text(',', { fontSize: fonts.keyLabel }),
-      phoneChinesePeriodLabel: text('。', { fontSize: fonts.keyLabel }),
+      phoneChinesePeriodLabel: punctuationIcon('period'),
       phoneEnglishPeriodLabel: text('.', { fontSize: fonts.keyLabel }),
       phoneCommaNotification: optionNotification(Theme.alphabeticBackgroundName, commaForeground, { symbol: ',' }),
       phonePeriodNotification: optionNotification(Theme.alphabeticBackgroundName, periodForeground, { symbol: '.' }),

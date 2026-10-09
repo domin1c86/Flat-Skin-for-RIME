@@ -64,6 +64,7 @@
     .key.system { background:var(--system); font-size:calc(16 * var(--u)); }
     .language-mark { position:absolute; inset:calc(11.4 * var(--u)) calc(3 * var(--u)); pointer-events:none; }
     .language-mark img { display:block; width:100%; height:100%; object-fit:contain; }
+    .punctuation-mark { display:block; width:calc(20 * var(--u)); height:calc(20 * var(--u)); }
     body[data-orientation="landscape"] .language-mark { inset:calc(6.8 * var(--u)) calc(3 * var(--u)); }
     .key.accent { background:var(--accent); color:var(--on-accent); }
     .key .icon { font-size:calc(23 * var(--u)); }
@@ -177,17 +178,21 @@
     let lastShiftTime = 0;
     let feedbackTimer;
     const escapeHTML = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    /* PUNCTUATION_START */
+    const punctuationShapes = {"comma":"<path d=\"M108 70C116 70 120 76 120 84C120 108 108 122 86 130L80 118C94 112 100 104 102 96C88 97 80 90 80 82C80 74 90 70 108 70Z\" fill=\"currentColor\"/>","period":"<circle cx=\"100\" cy=\"100\" r=\"25\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"9\"/>"};
+    /* PUNCTUATION_END */
     const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${icons[name]}</svg>`;
     function key(label, action='insert', value=label, kind='', hint='', pressed=null) {
       const legend = action==='language'
         ? `<span class="language-mark" aria-hidden="true"><img src="${languageImages[state.mode][state.language]}" width="380" height="410" alt="" draggable="false"></span>`
+        : kind.includes('centered-punctuation') ? `<svg class="punctuation-mark" viewBox="0 0 200 200" aria-hidden="true">${punctuationShapes[label==='，'?'comma':'period']}</svg>`
         : label.startsWith('icon:') ? icon(label.slice(5)) : `<span class="legend">${escapeHTML(label)}</span>`;
       const accessible = label.startsWith('icon:') ? ({shift:'Shift',caps:'大写锁定',delete:'删除',enter:'回车',space:'空格',lock:'符号锁定',unlock:'符号锁定'}[label.slice(5)] || label.slice(5)) : label;
       return `<button type="button" class="key ${kind} ${hint?'has-hint':''}" data-action="${action}" data-value="${escapeHTML(value)}" ${hint?`data-hint="${escapeHTML(hint)}" title="上划：${escapeHTML(hint)}"`:''} aria-label="${escapeHTML(accessible)}${hint?`，上划输入 ${escapeHTML(hint)}`:''}" ${pressed!==null?`aria-pressed="${pressed}"`:''}>${hint?`<span class="hint">${escapeHTML(hint)}</span>`:''}${legend}</button>`;
     }
     function mainKeys() {
       const letters = row => Array.from(row).map(c=>key(state.language==='zh'||state.shift?c.toUpperCase():c,'letter',c,'',hints[c])).join('');
-      return `<div class="keys main-keys"><div class="row row-top">${letters('qwertyuiop')}</div><div class="row row-home">${letters('asdfghjkl')}</div><div class="row row-bottom">${key('icon:'+(state.shift===2?'caps':'shift'),'shift','','system','',state.shift>0)}${letters('zxcvbnm')}${key('icon:delete','delete','','system')}</div><div class="row row-functions">${key('符号','page','symbol','system')}${key('123','page','numeric','system')}${key(state.language==='zh'?'，':',')}${key('icon:space','space')}${key(state.language==='zh'?'。':'.')}${key(state.language==='zh'?'中':'英','language','','system','',state.language==='en')}${key('icon:enter','enter','','system accent')}</div></div>`;
+      return `<div class="keys main-keys"><div class="row row-top">${letters('qwertyuiop')}</div><div class="row row-home">${letters('asdfghjkl')}</div><div class="row row-bottom">${key('icon:'+(state.shift===2?'caps':'shift'),'shift','','system','',state.shift>0)}${letters('zxcvbnm')}${key('icon:delete','delete','','system')}</div><div class="row row-functions">${key('符号','page','symbol','system')}${key('123','page','numeric','system')}${key(state.language==='zh'?'，':',','insert',state.language==='zh'?'，':',',state.language==='zh'?'centered-punctuation':'')}${key('icon:space','space')}${key(state.language==='zh'?'。':'.','insert',state.language==='zh'?'。':'.',state.language==='zh'?'centered-punctuation':'')}${key(state.language==='zh'?'中':'英','language','','system','',state.language==='en')}${key('icon:enter','enter','','system accent')}</div></div>`;
     }
     function numericKeys() {
       return `<div class="keys numeric-keys"><div class="operators">${['+','-','*','/'].map(c=>key(c)).join('')}</div><div class="digits">${Array.from('123456789').map(c=>key(c)).join('')}</div><div class="numeric-side">${key('icon:delete','delete','','system')}${key('.','insert','.','system')}${key('@','insert','@','system')}</div><div class="numeric-bottom">${key('符号','page','symbol','system')}${key('返回','page','main','system')}${key('0')}${key('空格','space','','system')}${key('icon:enter','enter','','system accent')}</div></div>`;

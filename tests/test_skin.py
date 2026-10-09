@@ -183,6 +183,27 @@ class GeneratedSkinTests(unittest.TestCase):
                 self.assertEqual(len(refs), 1)
                 self.assertEqual(doc[refs[0]]['normalColor'], '#FFFFFF')
             self.assertEqual(doc['enterButton']['backgroundStyle'], 'blueButtonBackgroundStyle')
+
+    def test_chinese_punctuation_uses_centered_artwork_with_original_actions(self):
+        for scheme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('pinyin' + orientation, scheme)
+                for key, image, character, english in (
+                    ('chineseCommaButton', 'comma', '，', ','),
+                    ('chinesePeriodButton', 'period', '。', '.'),
+                ):
+                    node = doc[key]
+                    self.assertEqual(node['action'], {'symbol': character})
+                    cn = doc[selected_styles(node['foregroundStyle'], {'rime$ascii_mode': False})[0]]
+                    self.assertEqual(cn['buttonStyleType'], 'fileImage')
+                    self.assertEqual(cn['normalImage'], {'file': 'punctuation', 'image': image})
+                    self.assertEqual(cn['normalImage'], cn['highlightImage'])
+                    self.assertEqual(cn['contentMode'], 'scaleAspectFit')
+                    self.assertEqual(cn['insets']['top'], cn['insets']['bottom'])
+                    self.assertEqual(cn['insets']['left'], cn['insets']['right'])
+                    en = doc[selected_styles(node['foregroundStyle'], {'rime$ascii_mode': True})[0]]
+                    self.assertEqual(en['text'], english)
+                    self.assertEqual(doc[node['notification'][0]]['action'], {'symbol': english})
             self.assertEqual(doc['phoneReturnPreeditNotification']['backgroundStyle'], 'blueButtonBackgroundStyle')
 
     def test_toolbar_actions_are_real_entrances(self):

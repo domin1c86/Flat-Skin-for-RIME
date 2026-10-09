@@ -24,6 +24,8 @@ python -m unittest discover -s tests -v
 
 中英图标已作为透明图片资源保存在深浅色的 `resources/` 目录中，普通构建无需额外依赖。仅重新生成图标时，需要 Node.js 与 `sharp`，运行 `node scripts/build_language_assets.cjs`；该脚本也会同步离线 HTML 中的图标。
 
+中文逗号和句号使用笔画边界居中的透明图形，避免全角字体留白造成偏移。重新生成这两个资源时运行 `node scripts/build_punctuation_assets.cjs`，同时更新 HTML 预览中的相同轮廓；输入动作仍为原来的中文标点。
+
 ## 更新预览图
 
 可选，需要 Pillow：
