@@ -6,7 +6,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from build_skin import SkinError, layout_rectangles, validate_document, validate_skin
+from build_skin import SkinError, layout_rectangles, validate_document, validate_image_resources, validate_skin
 
 
 def load(name, scheme='light'):
@@ -67,6 +67,16 @@ class ValidatorRegressionTests(unittest.TestCase):
         del doc['中文']
         with self.assertRaisesRegex(SkinError, 'has no symbols'):
             validate_document(doc)
+
+    def test_missing_language_sprite_fails(self):
+        self.doc['phoneChineseModeIcon']['normalImage']['image'] = 'missing'
+        with self.assertRaisesRegex(SkinError, 'missing sprite'):
+            validate_image_resources(self.doc, ROOT / 'default/light/resources')
+
+    def test_stretched_language_image_fails(self):
+        self.doc['phoneChineseModeIcon']['contentMode'] = 'scaleToFill'
+        with self.assertRaisesRegex(SkinError, 'preserve aspect ratio'):
+            validate_image_resources(self.doc, ROOT / 'default/light/resources')
 
 
 class GeneratedSkinTests(unittest.TestCase):
@@ -152,15 +162,14 @@ class GeneratedSkinTests(unittest.TestCase):
                 doc = load('pinyin' + orientation, scheme)
                 for english in (False, True):
                     refs = selected_styles(doc['asciiModeButton']['foregroundStyle'], {'rime$ascii_mode': english})
-                    self.assertEqual([doc[ref]['text'] for ref in refs], ['中', '英', '╮', '╰'])
-                    self.assertEqual(doc[refs[1 if english else 0]]['normalColor'],
-                                     doc['blueButtonBackgroundStyle']['normalColor'] if english else doc['preeditForegroundStyle']['normalColor'])
-                    self.assertEqual(doc[refs[0 if english else 1]]['normalColor'], doc['qButtonSwipeLabelForegroundStyle']['normalColor'])
-                    for corner in refs[2:]:
-                        self.assertEqual(doc[corner]['normalColor'], doc[refs[0 if english else 1]]['normalColor'])
-                        self.assertEqual(doc[corner]['highlightColor'], doc[corner]['normalColor'])
-                    self.assertGreater(doc[refs[2]]['center']['x'], doc[refs[0]]['center']['x'])
-                    self.assertLess(doc[refs[3]]['center']['x'], doc[refs[1]]['center']['x'])
+                    self.assertEqual(len(refs), 1)
+                    icon = doc[refs[0]]
+                    self.assertEqual(icon['buttonStyleType'], 'fileImage')
+                    self.assertEqual(icon['contentMode'], 'scaleAspectFit')
+                    self.assertEqual(icon['normalImage'], {'file': 'language', 'image': 'english' if english else 'chinese'})
+                    self.assertEqual(icon['highlightImage'], icon['normalImage'])
+                    self.assertEqual(icon['insets']['top'], 15.4 if orientation == 'Portrait' else 9.8)
+                    self.assertEqual(icon['insets']['top'], icon['insets']['bottom'])
                     self.assertEqual(doc['phoneAsciiNotification']['foregroundStyle'], doc['asciiModeButton']['foregroundStyle'])
         self.assertEqual(doc['phoneAsciiNotification']['rimeOptionName'], 'ascii_mode')
         self.assertEqual(doc['phoneCommaNotification']['action'], {'symbol': ','})

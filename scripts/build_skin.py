@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import struct
 import sys
 import zipfile
 
@@ -186,6 +187,31 @@ def split_document(doc):
     return apply(doc)
 
 
+def validate_image_resources(doc, folder):
+    for name, node in doc.items():
+        if not isinstance(node, dict) or node.get('buttonStyleType') != 'fileImage':
+            continue
+        require(node.get('contentMode') == 'scaleAspectFit', f'{name}: image must preserve aspect ratio')
+        for field in ('normalImage', 'highlightImage'):
+            resource = node.get(field)
+            if resource is None and field == 'highlightImage':
+                continue
+            require(isinstance(resource, dict), f'{name}: missing {field}')
+            filename = resource.get('file', '')
+            require(isinstance(filename, str) and re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*', filename), f'{name}: invalid image file')
+            png, descriptor_path = folder / (filename + '.png'), folder / (filename + '.yaml')
+            require(png.is_file() and descriptor_path.is_file(), f'{name}: missing image resource {filename}')
+            data = png.read_bytes()
+            require(len(data) >= 24 and data[:8] == b'\x89PNG\r\n\x1a\n', f'{name}: invalid PNG')
+            width, height = struct.unpack('>II', data[16:24])
+            descriptor = json.loads(descriptor_path.read_text(encoding='utf-8'))
+            require(resource.get('image') in descriptor, f'{name}: missing sprite {resource.get("image")}')
+            rect = descriptor[resource['image']].get('rect', {})
+            require(all(type(rect.get(k)) is int for k in ('x', 'y', 'width', 'height')), f'{name}: invalid sprite rectangle')
+            require(rect['x'] >= 0 and rect['y'] >= 0 and rect['width'] > 0 and rect['height'] > 0
+                    and rect['x'] + rect['width'] <= width and rect['y'] + rect['height'] <= height, f'{name}: sprite outside image')
+
+
 def validate_skin(skin=SKIN):
     config = json.loads((skin / "config.yaml").read_text(encoding="utf-8"))
     required = set()
@@ -202,6 +228,7 @@ def validate_skin(skin=SKIN):
             doc = json.loads(path.read_text(encoding="utf-8"))
             try:
                 validate_document(doc)
+                validate_image_resources(doc, skin / scheme / 'resources')
                 is_pad = filename.startswith("iPad")
                 widths = [768, 1024] if is_pad else ([568, 680, 844] if "Landscape" in filename else [320, 390, 430])
                 for width in widths:

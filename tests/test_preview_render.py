@@ -44,6 +44,21 @@ class ClassificationHighlightTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Unknown symbol category'):
             render_keyboard('symbolicPortrait', 'light', category='missing')
 
+    def test_language_atlas_keeps_geometry_and_same_active_colors(self):
+        from PIL import Image
+        for scheme, active, inactive in (('light', '#000000', '#A1A3A6'), ('dark', '#F4F4F6', '#91939B')):
+            atlas = Image.open(ROOT / 'default' / scheme / 'resources' / 'language.png').convert('RGBA')
+            self.assertEqual(atlas.size, (760, 410))
+            chinese, english = atlas.crop((0, 0, 380, 410)), atlas.crop((380, 0, 760, 410))
+            self.assertEqual(chinese.getchannel('A').tobytes(), english.getchannel('A').tobytes())
+            self.assertEqual(chinese.getpixel((0, 0))[3], 0)
+            for tile in (chinese, english):
+                opaque_colors = {pixel[:3] for _, pixel in tile.getcolors(tile.width * tile.height) if pixel[3] == 255}
+                self.assertEqual(opaque_colors, {ImageColor.getrgb(active), ImageColor.getrgb(inactive)})
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('pinyin' + orientation, scheme)
+                self.assertEqual(doc['phoneChineseModeIcon']['insets'], doc['phoneEnglishModeIcon']['insets'])
+
 
 if __name__ == '__main__':
     unittest.main()

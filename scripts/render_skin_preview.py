@@ -109,6 +109,18 @@ def render_keyboard(name, scheme, width=390, category='常用'):
         for ref in selected(reference):
             node = doc[ref]
             x, y, w, h = inset(rect, node.get('insets', {}))
+            if node.get('buttonStyleType') == 'fileImage':
+                resource = node.get('highlightImage', node['normalImage']) if highlighted else node['normalImage']
+                folder = SKIN / scheme / 'resources'
+                descriptor = json.loads((folder / (resource['file'] + '.yaml')).read_text(encoding='utf-8'))
+                bounds = descriptor[resource['image']]['rect']
+                atlas = Image.open(folder / (resource['file'] + '.png')).convert('RGBA')
+                tile = atlas.crop((bounds['x'], bounds['y'], bounds['x'] + bounds['width'], bounds['y'] + bounds['height']))
+                factor = min(w / tile.width, h / tile.height)
+                iw, ih = max(1, round(tile.width * factor * SCALE)), max(1, round(tile.height * factor * SCALE))
+                tile = tile.resize((iw, ih), Image.Resampling.LANCZOS)
+                image.paste(tile, (round((x + w / 2) * SCALE - iw / 2), round((y + h / 2) * SCALE - ih / 2)), tile)
+                continue
             color = node.get('highlightColor', node.get('normalColor')) if highlighted else node.get('normalColor')
             if not color:
                 continue

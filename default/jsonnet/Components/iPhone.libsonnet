@@ -14,8 +14,8 @@ local returnForeground = [
   Style.when('$returnKeyType', std.range(1, 11), 'phoneReturnText'),
 ];
 local languageForeground = [
-  Style.when('rime$ascii_mode', false, ['phoneChineseLabel', 'phoneInactiveEnglishLabel', 'phoneLanguageTopCorner', 'phoneLanguageBottomCorner']),
-  Style.when('rime$ascii_mode', true, ['phoneInactiveChineseLabel', 'phoneEnglishLabel', 'phoneLanguageTopCorner', 'phoneLanguageBottomCorner']),
+  Style.when('rime$ascii_mode', false, 'phoneChineseModeIcon'),
+  Style.when('rime$ascii_mode', true, 'phoneEnglishModeIcon'),
 ];
 local commaForeground = [
   Style.when('rime$ascii_mode', false, 'phoneChineseCommaLabel'),
@@ -45,7 +45,15 @@ local text(label, extra={}) = Style.text({
     for i in std.range(0, 25)
   },
 
-  base(isPortrait, mainControls=false):: Style.merge([
+  base(isPortrait, mainControls=false)::
+    local iconInsets = if isPortrait then { top: 15.4, bottom: 15.4, left: 6, right: 6 }
+      else { top: 9.8, bottom: 9.8, left: 6, right: 6 };
+    local languageIcon(state) = Style.fileImage({
+      contentMode: 'scaleAspectFit', insets: iconInsets,
+      normalImage: { file: 'language', image: state },
+      highlightImage: { file: 'language', image: state },
+    });
+    Style.merge([
     Preedit.new(), Toolbar.new(phoneControls=true, mainControls=mainControls),
     Theme.shared(metrics.keyInsets.iPhone[if isPortrait then 'portrait' else 'landscape']),
     {
@@ -68,18 +76,9 @@ local text(label, extra={}) = Style.text({
         backgroundStyle: Theme.blueBackgroundName, foregroundStyle: returnForeground,
         action: 'enter',
       },
-      phoneChineseLabel: text('中', { fontSize: 14, fontWeight: 'medium', center: { x: 0.34, y: 0.36 } }),
-      phoneInactiveChineseLabel: text('中', { fontSize: 14, fontWeight: 'medium', center: { x: 0.34, y: 0.36 },
-        normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor }),
-      phoneEnglishLabel: text('英', { fontSize: 14, center: { x: 0.68, y: 0.64 },
-        normalColor: colors.blueButtonBackgroundColor, highlightColor: colors.blueButtonBackgroundColor }),
-      phoneInactiveEnglishLabel: text('英', { fontSize: 14, center: { x: 0.68, y: 0.64 },
-        normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor }),
-      // 两段圆弧转角，使用与未激活标签相同的灰色。
-      phoneLanguageTopCorner: text('╮', { fontSize: 9, fontWeight: 'semibold', center: { x: 0.72, y: 0.35 },
-        normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor }),
-      phoneLanguageBottomCorner: text('╰', { fontSize: 9, fontWeight: 'semibold', center: { x: 0.29, y: 0.64 },
-        normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor }),
+      // 已确认的整体图标保持相同比例，键帽背景独立适配。
+      phoneChineseModeIcon: languageIcon('chinese'),
+      phoneEnglishModeIcon: languageIcon('english'),
       phoneAsciiNotification: optionNotification(Theme.systemBackgroundName, languageForeground, Keys.asciiModeButton.action),
       phoneChineseCommaLabel: text('，', { fontSize: fonts.keyLabel }),
       phoneEnglishCommaLabel: text(',', { fontSize: fonts.keyLabel }),
