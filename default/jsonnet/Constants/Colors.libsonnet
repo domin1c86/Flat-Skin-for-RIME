@@ -2,7 +2,7 @@
 local labelColor = {
   primary: {
     light: '#000000',
-    dark: '#FFFFFF',
+    dark: '#F4F4F6',
   },
   secondary: {
     light: '#3c3c4399',
@@ -20,26 +20,26 @@ local labelColor = {
 
 // 分割线颜色
 local separatorColor = {
-  light: '#C6C6C8',
-  dark: '#38383A',
+  light: '#DDDFE2',
+  dark: '#48494F',
 };
 
-// 键盘背景色 03 表示 0.01 的透明度
+// 扁平灰白：固定底板颜色，避免系统背景改变灰白层次。
 local keyboardBackgroundColor = {
-  light: '#ffffff03',
-  dark: '#00000003',
+  light: '#E4E5E7',
+  dark: '#1B1C1F',
 };
 
 // 标准按键背景色（如字母按键、空格键等）
 local standardButtonBackgroundColor = {
   light: '#FFFFFF',
-  dark: '#707070',
+  dark: '#37383C',
 };
 
 // 标准按键按下时的背景色
 local standardButtonHighlightedBackgroundColor = {
-  light: '#E6E6E6',
-  dark: '#4C4C4C',
+  light: '#ECEEF1',
+  dark: '#51535A',
 };
 
 // 标准按键前景色（如字母按键、空格键等），用于按键的字体，图片等
@@ -55,13 +55,13 @@ local standardButtonShadowColor = {
 
 // 系统按键（如回车、删除等）背景颜色
 local systemButtonBackgroundColor = {
-  light: '#E6E6E6',
-  dark: '#4C4C4C',
+  light: '#CFD0D2',
+  dark: '#292A2E',
 };
 
 local systemButtonHighlightedBackgroundColor = {
-  light: '#FFFFFF',
-  dark: '#707070',
+  light: '#BABCC0',
+  dark: '#45474E',
 };
 
 // 系统按键（如回车、删除等）前景颜色
@@ -74,7 +74,7 @@ local blueButtonBackgroundColor = {
   dark: '#0A84FF',
 };
 
-local blueButtonHighlightedBackgroundColor = systemButtonHighlightedBackgroundColor;
+local blueButtonHighlightedBackgroundColor = { light: '#0068D9', dark: '#006BD6' };
 
 local blueButtonForegroundColor = {
   light: '#FFFFFF',
@@ -82,8 +82,8 @@ local blueButtonForegroundColor = {
 };
 
 local blueButtonHighlightedForegroundColor = {
-  light: labelColor.primary.light,
-  dark: labelColor.primary.dark,
+  light: '#FFFFFF',
+  dark: '#FFFFFF',
 };
 
 // 按键底部边缘颜色
@@ -122,10 +122,10 @@ local standardCalloutBorderColor = {
 local preeditForegroundColor = standardButtonForegroundColor;
 
 // 工具栏按钮前景色
-local toolbarButtonForegroundColor = standardButtonForegroundColor;
+local toolbarButtonForegroundColor = { light: '#64666A', dark: '#B3B4BA' };
 
 // 工具栏按钮高亮前景色
-local toolbarButtonHighlightedForegroundColor = standardButtonForegroundColor;
+local toolbarButtonHighlightedForegroundColor = blueButtonBackgroundColor;
 
 // 候选字亮候选字背景颜色
 local candidateHighlightColor = standardButtonBackgroundColor;
@@ -165,4 +165,5 @@ local candidateSeparatorColor = separatorColor;
   candidateHighlightColor: candidateHighlightColor,
   candidateForegroundColor: candidateForegroundColor,
   candidateSeparatorColor: candidateSeparatorColor,
+  swipeHintColor: { light: '#97999C', dark: '#9B9DA6' },
 }

@@ -1,6 +1,6 @@
-// 「极简」皮肤入口 —— 只负责声明「要出哪些文件」，具体内容全在 Keyboards/ 下。
+// 「扁平灰白」皮肤入口：iPhone 新布局，iPad 保留原有版面与分体。
 //
-// 编译：make compile（或在手机上长按皮肤选择「运行 main.jsonnet」）
+// PC 编译：python scripts/build_skin.py；手机端长按皮肤选择「运行 main.jsonnet」。
 local Style = import 'Components/Style.libsonnet';
 local iPadNumeric = import 'Keyboards/iPadNumeric.libsonnet';
 local iPadPinyin = import 'Keyboards/iPadPinyin.libsonnet';
@@ -31,6 +31,7 @@ local keyboards = {
 // iPad 上没有单独的符号页：iPad 的数字页一页就放下了 iPhone 上两页的内容，
 // 所以 symbolic 在 iPad 上直接指回拼音页（按 `123` 走数字页，不存在第二页）。
 local config = {
+  name: '扁平灰白',
   pinyin: {
     iPhone: { portrait: 'pinyinPortrait', landscape: 'pinyinLandscape' },
     iPad: {
@@ -59,7 +60,7 @@ local config = {
 };
 
 {
-  'config.yaml': std.manifestYamlDoc(config, indent_array_in_object=true, quote_keys=false),
+  'config.yaml': std.toString(config),
 }
 + {
   // JSON 是 YAML 的子集，这里用 std.toString 而不是 std.manifestYamlDoc：

@@ -35,15 +35,13 @@ local enterForegroundStyle = [
   Style.when('$returnKeyType', blueReturnKeyTypes, blueForegroundName),
 ];
 
-// 一份按键背景：圆角矩形 + 底部立体边缘。insets 决定键与键之间的缝隙，
+// 一份扁平按键背景：只有圆角矩形，不绘制底边或阴影。insets 决定键距，
 // 随设备与方向变化，所以由调用方传进来。
 local buttonBackground(insets, normalColor, highlightColor) = Style.geometry({
   insets: insets,
   normalColor: normalColor,
   highlightColor: highlightColor,
   cornerRadius: metrics.key.cornerRadius,
-  normalLowerEdgeColor: colors.lowerEdgeOfButtonNormalColor,
-  highlightLowerEdgeColor: colors.lowerEdgeOfButtonHighlightColor,
 });
 
 {
@@ -64,7 +62,7 @@ local buttonBackground(insets, normalColor, highlightColor) = Style.geometry({
 
   // 所有键盘都要带上的共享样式节点。insets 随设备与方向变化，所以做成参数。
   shared(insets):: {
-    // 键盘底板。03 约合 0.01 的不透明度，几乎全透，透出系统键盘背景。
+    // 深浅色均使用不透明底板，与已选的扁平灰白预览配色一致。
     [keyboardBackgroundName]: Style.geometry({ normalColor: colors.keyboardBackgroundColor }),
 
     [alphabeticBackgroundName]: buttonBackground(

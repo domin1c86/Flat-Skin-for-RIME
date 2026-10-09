@@ -9,4 +9,12 @@
       subviews: [{ Cell: cell } for cell in cells],
     },
   },
+
+  // 嵌套布局时传入完整子节点；同层必须全是 HStack、VStack 或 Cell。
+  stack(kind, children, style=null):: {
+    [kind]: {
+      [if style != null then 'style']: style,
+      subviews: children,
+    },
+  },
 }

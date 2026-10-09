@@ -1,0 +1,190 @@
+"""Render a configuration diagram from compiled skin data (not an iOS screenshot).
+
+Requires Pillow. SF Symbols are approximated with simple vector strokes; all key
+geometry, text, layers, colors and collection data come from the generated files.
+"""
+import argparse
+import json
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont
+
+from build_skin import ROOT, SKIN, layout_rectangles, length
+
+SCALE = 3
+CONDITIONS = {'$returnKeyType': 0, 'rime$ascii_mode': False, '$symbolicKeyboardLockState': False}
+
+
+def font(size, text=''):
+    cjk = any(ord(char) > 0x2ff for char in text)
+    candidates = ([Path('C:/Windows/Fonts/msyh.ttc')] if cjk else []) + [
+        Path('C:/Windows/Fonts/segoeui.ttf'), Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')]
+    for candidate in candidates:
+        if candidate.is_file():
+            return ImageFont.truetype(str(candidate), max(1, round(size * SCALE)))
+    return ImageFont.load_default()
+
+
+def selected(value):
+    if isinstance(value, str):
+        return [value]
+    refs = []
+    for item in value or []:
+        if isinstance(item, str):
+            refs.append(item)
+        else:
+            match = CONDITIONS.get(item['conditionKey'])
+            expected = item['conditionValue']
+            if match == expected or isinstance(expected, list) and match in expected:
+                refs += [item['styleName']] if isinstance(item['styleName'], str) else item['styleName']
+    return refs
+
+
+def inset(rect, values):
+    x, y, w, h = rect
+    left, top = values.get('left', 0), values.get('top', 0)
+    return (x + left, y + top, max(0, w - left - values.get('right', 0)), max(0, h - top - values.get('bottom', 0)))
+
+
+def icon(draw, name, center, size, color):
+    x, y = center
+    unit = size / 24
+
+    def points(coords):
+        return [((x + (px - 12) * unit) * SCALE, (y + (py - 12) * unit) * SCALE) for px, py in coords]
+
+    def line(coords):
+        draw.line(points(coords), fill=color, width=max(1, round(1.8 * unit * SCALE)), joint='curve')
+
+    def rectangle(coords, radius=2):
+        draw.rounded_rectangle(points(coords), radius=radius * unit * SCALE, outline=color, width=max(1, round(1.7 * unit * SCALE)))
+
+    if name.startswith('square.grid'):
+        for px, py in ((3, 3), (15, 3), (3, 15), (15, 15)):
+            rectangle([(px, py), (px + 6, py + 6)], 1.5)
+    elif name == 'face.smiling':
+        draw.ellipse(points([(3, 3), (21, 21)]), outline=color, width=max(1, round(1.7 * unit * SCALE)))
+        line([(8, 8), (8, 10)]); line([(16, 8), (16, 10)])
+        draw.arc(points([(7, 9), (17, 18)]), 10, 170, fill=color, width=max(1, round(1.7 * unit * SCALE)))
+    elif name == 'doc.on.doc':
+        rectangle([(3, 3), (17, 17)]); rectangle([(7, 7), (21, 21)])
+        line([(11, 12), (17, 12)]); line([(11, 16), (17, 16)])
+    elif name == 'chevron.left.forwardslash.chevron.right':
+        line([(8, 7), (3, 12), (8, 17)]); line([(16, 7), (21, 12), (16, 17)]); line([(14, 4), (10, 20)])
+    elif name == 'chevron.down':
+        line([(5, 9), (12, 16), (19, 9)])
+    elif name.startswith('delete.left'):
+        line([(9, 5), (20, 5), (21, 7), (21, 17), (19, 19), (9, 19), (2, 12), (9, 5)])
+        line([(11, 9), (17, 15)]); line([(17, 9), (11, 15)])
+    elif name.startswith('shift') or name.startswith('capslock'):
+        line([(12, 3), (21, 12), (15, 12), (15, 21), (9, 21), (9, 12), (3, 12), (12, 3)])
+    elif name == 'arrow.turn.down.left':
+        line([(20, 5), (20, 12), (18, 16), (4, 16)]); line([(9, 11), (4, 16), (9, 21)])
+    elif name == 'space':
+        line([(4, 10), (4, 15), (20, 15), (20, 10)])
+    elif name.startswith('lock'):
+        rectangle([(5, 10), (19, 21)], 2.5)
+        if name == 'lock.open':
+            line([(8, 10), (8, 6), (10, 3), (14, 3), (16, 6)])
+        else:
+            line([(8, 10), (8, 6), (10, 3), (14, 3), (16, 6), (16, 10)])
+
+
+def render_keyboard(name, scheme, width=390):
+    doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
+    total = doc['preeditHeight'] + doc['toolbarHeight'] + doc['keyboardHeight']
+    board = doc['keyboardBackgroundStyle']['normalColor']
+    image = Image.new('RGB', (round(width * SCALE), round(total * SCALE)), board)
+    draw = ImageDraw.Draw(image)
+
+    def paint(reference, rect):
+        for ref in selected(reference):
+            node = doc[ref]
+            x, y, w, h = inset(rect, node.get('insets', {}))
+            color = node.get('normalColor')
+            if not color:
+                continue
+            if node.get('buttonStyleType') == 'geometry':
+                draw.rounded_rectangle((x * SCALE, y * SCALE, (x + w) * SCALE, (y + h) * SCALE),
+                                       radius=node.get('cornerRadius', 0) * SCALE, fill=color)
+            else:
+                center = node.get('center', {})
+                point = (x + w * center.get('x', .5), y + h * center.get('y', .5))
+                size = node.get('fontSize', 16)
+                if node.get('buttonStyleType') == 'text':
+                    label = node.get('text', '')
+                    draw.text((point[0] * SCALE, point[1] * SCALE), label, font=font(size, label), fill=color, anchor='mm')
+                elif node.get('buttonStyleType') == 'systemImage':
+                    icon(draw, node['systemImageName'], point, size, color)
+
+    def paint_cell(node, rect):
+        bounds = node.get('bounds', {})
+        x, y, w, h = rect
+        visible_w = length(bounds.get('width'), w)
+        visible_h = length(bounds.get('height'), h)
+        visible_w = w if visible_w is None else visible_w
+        visible_h = h if visible_h is None else visible_h
+        alignment = bounds.get('alignment', 'center')
+        x += 0 if alignment.startswith('left') else w - visible_w if alignment.startswith('right') else (w - visible_w) / 2
+        y += 0 if alignment.endswith('Top') else h - visible_h if alignment.endswith('Bottom') else (h - visible_h) / 2
+        rect = (x, y, visible_w, visible_h)
+        paint(node.get('backgroundStyle'), rect)
+        if node.get('type', 'button') == 'button':
+            paint(node.get('foregroundStyle'), rect)
+            return
+        if node['type'] == 'subClassifiedSymbols':
+            values = doc['常用']
+            rows, cols = node['maximumRow'], node['maximumColumn']
+        elif node['type'] in ('symbols', 'classifiedSymbols'):
+            values = doc[node['dataSource']]
+            rows, cols = node['maximumRow'], 1
+        else:
+            return
+        x, y, w, h = inset(rect, node.get('insets', {}))
+        cell_style = doc[node['cellStyle']]
+        foreground = dict(doc[cell_style['foregroundStyle']])
+        for i, label in enumerate(values):
+            cx, cy = x + (i % cols) * w / cols, y + (i // cols) * h / rows
+            if node.get('displaySeparatorLine'):
+                separator = node['separatorLineColor']
+                if i % cols:
+                    draw.line((cx * SCALE, cy * SCALE, cx * SCALE, (cy + h / rows) * SCALE), fill=separator, width=1)
+                if i >= cols:
+                    draw.line((cx * SCALE, cy * SCALE, (cx + w / cols) * SCALE, cy * SCALE), fill=separator, width=1)
+            label = label if isinstance(label, str) else label['label']
+            size = foreground['fontSize']
+            draw.text(((cx + w / cols / 2) * SCALE, (cy + h / rows / 2) * SCALE), label,
+                      font=font(size, label), fill=foreground['normalColor'], anchor='mm')
+
+    for field, offset, height, region_style in (
+        ('toolbarLayout', doc['preeditHeight'], doc['toolbarHeight'], 'toolbarStyle'),
+        ('keyboardLayout', doc['preeditHeight'] + doc['toolbarHeight'], doc['keyboardHeight'], 'keyboardStyle'),
+    ):
+        left, top, w, h = inset((0, offset, width, height), doc[region_style].get('insets', {}))
+        for cell, (x, y, rw, rh) in layout_rectangles(doc, field, w, h):
+            paint_cell(doc[cell], (left + x, top + y, rw, rh))
+    return image
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output', type=Path, default=SKIN / 'demo.png')
+    args = parser.parse_args()
+    gap, margin, title_height = 18, 24, 52
+    board_width, board_height = 390, 281
+    image = Image.new('RGB', ((3 * board_width + 2 * gap + 2 * margin) * SCALE,
+                              (2 * (board_height + 36) + title_height + 2 * margin) * SCALE), '#f7f7f5')
+    draw = ImageDraw.Draw(image)
+    draw.text((margin * SCALE, margin * SCALE), '扁平灰白 · iPhone', font=font(23, '扁平灰白'), fill='#242725')
+    draw.text(((margin + 850) * SCALE, (margin + 9) * SCALE), '配置示意 · 非实机截图', font=font(12, '配置示意'), fill='#747974')
+    for row, scheme in enumerate(('light', 'dark')):
+        for column, (name, label) in enumerate((('pinyinPortrait', '主界面'), ('numericPortrait', '数字'), ('symbolicPortrait', '符号'))):
+            x, y = margin + column * (board_width + gap), margin + title_height + row * (board_height + 36)
+            draw.text((x * SCALE, y * SCALE), label + (' / 浅色' if row == 0 else ' / 深色'), font=font(13, label), fill='#747974')
+            image.paste(render_keyboard(name, scheme), (x * SCALE, (y + 26) * SCALE))
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    image.save(args.output, optimize=True)
+    print(f'Rendered configuration diagram: {args.output}')
+
+
+if __name__ == '__main__':
+    main()

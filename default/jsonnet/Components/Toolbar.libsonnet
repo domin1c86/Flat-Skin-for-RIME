@@ -83,15 +83,21 @@ local backspaceName = 'verticalBackspaceButtonStyle';
   //
   // supportsSplit: 这份键盘布局是否有 Split（分体）版面。为 true 时在系统菜单键右侧
   // 加一颗 split 状态切换键；不支持的键盘（如 iPhone 竖屏）不加这颗键。
-  new(horizontalInsets={ top: 8, left: 3, bottom: 1 }, verticalInsets=null, supportsSplit=false):: Style.merge([
+  new(horizontalInsets={ top: 8, left: 3, bottom: 1 }, verticalInsets=null, supportsSplit=false, phoneControls=false):: Style.merge([
     {
       toolbarHeight: metrics.toolbar.height,
-      toolbarStyle: { backgroundStyle: Theme.keyboardBackgroundName },
+      toolbarStyle: { backgroundStyle: Theme.keyboardBackgroundName }
+        + (if phoneControls then { insets: { left: 9, right: 9 } } else {}),
       toolbarLayout: [
         { HStack: { subviews:
           [{ Cell: menuButtonName }]
           + (if supportsSplit then [{ Cell: splitToggleButtonName }] else [])
-          + [{ Cell: toolbarSpacerName }, { Cell: dismissButtonName }]
+          + [{ Cell: toolbarSpacerName }]
+          + (if phoneControls then [
+              { Cell: 'toolbarEmojiButton' }, { Cell: 'toolbarPasteboardButton' },
+              { Cell: 'toolbarScriptButton' },
+            ] else [])
+          + [{ Cell: dismissButtonName }]
         } },
       ],
       [toolbarSpacerName]: {},
@@ -139,8 +145,15 @@ local backspaceName = 'verticalBackspaceButtonStyle';
     // 没有 size 的 toolbarSpacer 吃掉剩余空间，把它们分别顶到左右两端。固定宽度
     // 而不是按比例分（如 1/8）是为了让 split 切换键紧贴在菜单键右边，不被工具栏
     // 越宽（如 iPad）就拉得越远。
-    iconButton(menuButtonName, 'square.grid.2x2.fill', { shortcut: '#keyboardMenu' }, null, { width: 44 }),
-    iconButton(dismissButtonName, 'chevron.down', 'dismissKeyboard', null, { width: 44 }),
+    iconButton(menuButtonName, if phoneControls then 'square.grid.2x2' else 'square.grid.2x2.fill',
+      { shortcut: '#keyboardMenu' }, null, { width: if phoneControls then 38 else 44 }),
+    iconButton(dismissButtonName, 'chevron.down', 'dismissKeyboard', null,
+      { width: if phoneControls then 38 else 44 }),
+    (if phoneControls then Style.merge([
+      iconButton('toolbarEmojiButton', 'face.smiling', { keyboardType: 'emojis' }, null, { width: 38 }),
+      iconButton('toolbarPasteboardButton', 'doc.on.doc', { shortcut: '#showPasteboardView' }, null, { width: 38 }),
+      iconButton('toolbarScriptButton', 'chevron.left.forwardslash.chevron.right', { shortcut: '#toggleScriptView' }, null, { width: 38 }),
+    ]) else {}),
     (if supportsSplit then
        splitToggleButton(splitToggleButtonName, { shortcut: '#toggleSplitState' }, { width: 44 })
      else {}),

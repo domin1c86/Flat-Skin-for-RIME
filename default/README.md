@@ -1,110 +1,48 @@
-# 「极简」
+# 扁平灰白
 
-皮肤文件通过 `Jsonnet` 语法编写，PC 端编译时需要安装 `jsonnet` 等命令行工具。
+灰白分明的扁平键帽、蓝色回车键，配套浅色与深色模式。
 
-## 使用说明
+## 安装
 
-本皮肤不包含「英文键盘」，如需输入英文，可使用 RIME 的 `ascii_mode` 切换，或者使用系统自带的英文输入法。
+将「扁平灰白.cskin」传到 iPhone，在文件或分享菜单中选择用「元书」打开，然后在元书的皮肤页面启用「扁平灰白」。
 
-快捷键：
+## iPhone 主界面
 
-- `e` 键上划：打开 Emoji 键盘
-- `s` 键上划：打开脚本页面(助记：脚本 = Script，所以放在 `s` 键上划)
-- `p` 键上划：打开剪贴板页面（助记：剪贴板 = Pasteboard，所以放在 `p` 键上划）
-- `a` 键上划：RIME `ascii_mode` 状态切换
-- iPad `Tab` 键上划：键盘分体（Split）开关，见下
-- iPhone 横屏 `Shift`（拼音页）/ `#+=`（数字页）/ `123`（符号页）键上划：键盘分体开关，见下
+- 三行 QWERTY，底行是「符号、123、逗号、空格、句号、中英、回车」。
+- 字母上划输入键面顶部的字符：Q–P 对应 1–0，其余按键对应标点符号。
+- 「中／英」切换当前 RIME 方案的 ascii_mode，不需要独立英文键盘。
+- Shift 切换大小写；大小写锁定使用元书原生操作。
+- 回车保持蓝色，普通输入框显示回车图标；搜索、发送等输入框显示对应文字。
+- 有未上屏的拼音时，空格显示「选定」，保留候选字上屏行为。
+- 逗号、句号随中英状态切换全角与半角。
+- 空格上划仍可上屏第二个候选字。
 
-## 分体键盘（Split）
+## 工具栏
 
-键盘可以从中间分开，两个大拇指各管一边：iPad 不限方向，iPhone 只在横屏（竖屏太窄，
-分成两半没有使用价值）。
+从左到右是菜单、留白、Emoji、剪贴板、脚本、收起键盘。
 
-**分开 / 合并是同一个手势**——上划该页行首那颗功能键：iPad 上是 `Tab`（左上角）；
-iPhone 上是拼音页 `Shift`、数字页 `#+=`、符号页 `123`（iPhone 没有 Tab 键，
-选它们是因为都在行首角落、且分体后仍要用，不会被顶掉）。这颗键上划一次进分体，
-分体态下再上划一次就合回去，没有另外的「点一下合并」按钮。
+输入拼音时，元书会使用候选栏覆盖工具栏；点击候选栏右侧箭头可展开候选字。
 
-支持分体的页面，工具栏系统菜单键右侧也有一颗状态切换键（图标随 `$keyboardSplitState`
-在「展开」「收起」两态间切换），点它效果一样；不支持分体的页面（iPhone 竖屏）不显示这颗键。
-状态会记住，下次启动键盘还是分体的；状态是全局的，同一页面上分体、切到另一页也还是分体的
-（前提是那一页也适配了分体）。
+## 数字界面
 
-几点说明：
+左侧是 +、-、*、/，中间是数字九宫格，右侧是删除、英文句点、@。
 
-- 分体只在 iPad 与 iPhone 横屏的拼音 / 数字 / 符号页生效，iPhone 竖屏两种状态逐像素相同。
-- 分体后键盘**总高度不变**：iPad 靠把顶上那排数字行收起来腾出地方，剩下四行分掉整块高度，
-  所以键会比合并态高一截；iPhone 横屏本来就是四行、没有独立的数字行，分体不影响总高。
-  这是机制决定的：总高挂在配置根节点上，分体覆盖块够不着它（见 `docs/键盘Split状态.md`）。
-- 分体后放不下的键会收起来，它们的字符仍可由上划取得（iPad 的 `【】、；‘ ，。/` 等；
-  iPhone 上每行的字母/数字/符号本身放得下，只是键距变窄）。
-- 分体与单手模式互斥，开启单手模式会自动合并键盘。
+底行是「符号、返回、0、空格、回车」。「返回」回到主键盘。
 
-## 目录结构
+## 符号界面
 
-```
-jsonnet/
-  main.jsonnet            出哪些文件、config.yaml 怎么写
-  Constants/
-    Colors.libsonnet      配色（每项都是 { light, dark } 一对）
-    Fonts.libsonnet       字号
-    Metrics.libsonnet     高度、内边距、圆角
-    Keys.libsonnet        按键表：一颗键「做什么」（动作、上下划）
-  Components/
-    Style.libsonnet       样式节点构造、深浅色解析、无用节点裁剪
-    Layout.libsonnet      布局语法糖
-    Widths.libsonnet      宽度表：一颗键「占一行的多少」
-    Button.libsonnet      按键构造器（唯一拼装按键的地方）
-    Theme.libsonnet       全皮肤共用的样式节点
-    Split.libsonnet       分体键盘的版面
-    Preedit.libsonnet     预编辑区
-    Toolbar.libsonnet     系统菜单/分体切换/收起键盘 + 候选字栏
-  Keyboards/              五份版面，各自只写「哪一行放哪些键」
-```
+左侧是「常用、中文、英文」分类，下面是锁定和返回；右侧每页四列五行。
 
-## 自定义皮肤调整说明
+点击锁定可以连续输入符号。未锁定时，元书在输入符号后按原生规则回到主键盘。符号页的「返回」回到上一个键盘，因此从数字页进入符号页时也能直接返回数字页。
 
-- `jsonnet/Constants/Keys.libsonnet`：每颗键做什么。
+## 设备适配
 
-  想调整某颗键的上下划动，在这里给它加 `swipeUpAction` / `swipeDownAction`。
+iPhone 横屏保留同样的分区与键位，并降低行高；本套 iPhone 布局不使用分体模式。
 
-- `jsonnet/Constants/Metrics.libsonnet`：各区域的高度、键与键之间的缝隙、圆角。
+iPad 保留原来的五行布局和分体功能；上划 Tab 可切换分体，工具栏也保留分体开关。iPad 浮动键盘使用 iPhone 竖屏布局。
 
-- `jsonnet/Components/Widths.libsonnet`：每颗键占一行的多少。
+## 预览与修改
 
-  **一行里所有键的宽度加起来必须正好是一整行**，多了少了都不会报错，但画出来一定是错的。
+皮肤中的预览图来自生成配置的示意绘制，不是 iOS 实机截图。字体和 SF Symbols 的最终显示由元书和 iOS 决定。
 
-## 如何为单个按键设置颜色
-
-在 `jsonnet/Constants/Keys.libsonnet` 中找到对应按键，加上颜色字段即可。
-只有加了颜色的键才会单独生成一份键帽样式，其余的键共用同一份。
-
-- `backgroundNormalColor`：背景颜色（正常状态）
-- `backgroundHighlightColor`：背景颜色（按下状态）
-- `foregroundNormalColor`：前景颜色（正常状态）
-- `foregroundHighlightColor`：前景颜色（按下状态）
-
-每种颜色都要分别给 light 与 dark 两个值，以适配系统主题。例如：
-
-```jsonnet
-{
-  // ...
-  qButton: letter('q') {
-    backgroundNormalColor: { light: '#fff1bc', dark: '#FFFFFF' },
-    backgroundHighlightColor: { light: '#699c78', dark: '#FFFFFF' },
-    foregroundNormalColor: { light: '#DD105E', dark: '#FFFFFF' },
-    foregroundHighlightColor: { light: '#BDBDD7', dark: '#FFFFFF' },
-  },
-  // ...
-}
-```
-
-## 手机端编译
-
-长按皮肤，选择「运行 main.jsonnet」
-
-## PC 端编译
-
-```shell
-make
-```
+源文件位于 jsonnet。手机端修改后，长按皮肤选择「运行 main.jsonnet」即可重新生成配置。
