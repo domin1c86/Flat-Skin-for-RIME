@@ -178,7 +178,7 @@
       return `<button type="button" class="key ${kind} ${hint?'has-hint':''}" data-action="${action}" data-value="${escapeHTML(value)}" ${hint?`data-hint="${escapeHTML(hint)}" title="上划：${escapeHTML(hint)}"`:''} aria-label="${escapeHTML(accessible)}${hint?`，上划输入 ${escapeHTML(hint)}`:''}" ${pressed!==null?`aria-pressed="${pressed}"`:''}>${hint?`<span class="hint">${escapeHTML(hint)}</span>`:''}${legend}</button>`;
     }
     function mainKeys() {
-      const letters = row => Array.from(row).map(c=>key(state.shift?c.toUpperCase():c,'letter',c,'',hints[c])).join('');
+      const letters = row => Array.from(row).map(c=>key(state.language==='zh'||state.shift?c.toUpperCase():c,'letter',c,'',hints[c])).join('');
       return `<div class="keys main-keys"><div class="row row-top">${letters('qwertyuiop')}</div><div class="row row-home">${letters('asdfghjkl')}</div><div class="row row-bottom">${key('icon:'+(state.shift===2?'caps':'shift'),'shift','','system','',state.shift>0)}${letters('zxcvbnm')}${key('icon:delete','delete','','system')}</div><div class="row row-functions">${key('符号','page','symbol','system')}${key('123','page','numeric','system')}${key(state.language==='zh'?'，':',')}${key('icon:space','space')}${key(state.language==='zh'?'。':'.')}${key(state.language==='zh'?'中':'英','language','','system','',state.language==='en')}${key('icon:enter','enter','','system accent')}</div></div>`;
     }
     function numericKeys() {

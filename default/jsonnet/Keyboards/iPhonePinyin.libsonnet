@@ -20,6 +20,12 @@ local names(row) = [name(c) for c in std.stringChars(row)];
       local topName = n + 'SwipeLabel';
       local bottomName = n + 'LetterLabel';
       local upperName = n + 'UppercaseForegroundStyle';
+      local chineseForeground = [topName + 'ForegroundStyle', upperName];
+      local normalForeground = [
+        topName + 'ForegroundStyle',
+        Style.when('rime$ascii_mode', false, upperName),
+        Style.when('rime$ascii_mode', true, bottomName + 'ForegroundStyle'),
+      ];
       Button.alphabetic(n, Keys[n] + width + {
         swipeUpAction: if std.count(std.stringChars('qwertyuiop'), c) > 0
           then { character: Phone.letterHints[c] } else { symbol: Phone.letterHints[c] },
@@ -29,7 +35,16 @@ local names(row) = [name(c) for c in std.stringChars(row)];
           { name: bottomName, params: { text: c, fontSize: fonts.keyLabel, center: { y: 0.59 } } },
         ],
       }, insets, { size: metrics.hint.iPhoneSize }) + {
-        [n]+: { uppercasedStateForegroundStyle: [topName + 'ForegroundStyle', upperName] },
+        [n]+: {
+          foregroundStyle: normalForeground,
+          uppercasedStateForegroundStyle: chineseForeground,
+          notification: [n + 'ChineseLabelNotification'],
+        },
+        [n + 'ChineseLabelNotification']: {
+          notificationType: 'rime', rimeNotificationType: 'optionChanged',
+          rimeOptionName: 'ascii_mode', rimeOptionValue: false,
+          backgroundStyle: Theme.alphabeticBackgroundName, foregroundStyle: chineseForeground,
+        },
         [upperName]+: { center: { y: 0.59 } },
       };
     Style.merge([

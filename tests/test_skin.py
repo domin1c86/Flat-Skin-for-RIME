@@ -103,7 +103,14 @@ class GeneratedSkinTests(unittest.TestCase):
                 node = doc[letter + 'Button']
                 self.assertEqual(next(iter(node['swipeUpAction'].values())), hint)
                 for field in ('foregroundStyle', 'uppercasedStateForegroundStyle'):
-                    self.assertIn(hint, [doc[name]['text'] for name in node[field]])
+                    for english in (False, True):
+                        refs = selected_styles(node[field], {'rime$ascii_mode': english})
+                        self.assertIn(hint, [doc[name]['text'] for name in refs])
+                        expected_letter = letter.upper() if not english or field == 'uppercasedStateForegroundStyle' else letter
+                        self.assertIn(expected_letter, [doc[name]['text'] for name in refs])
+                notification = doc[node['notification'][0]]
+                self.assertEqual(notification['rimeOptionValue'], False)
+                self.assertNotIn('action', notification)
                 self.assertEqual(node['action'], {'character': letter})
                 self.assertEqual(node['uppercasedStateAction'], {'character': letter.upper()})
 
