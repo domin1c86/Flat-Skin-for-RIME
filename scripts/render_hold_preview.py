@@ -7,9 +7,10 @@ from build_skin import SKIN, ROOT, layout_rectangles, length
 from render_skin_preview import SCALE, font, inset, render_keyboard, effective_button
 
 
-def hold_geometry(doc, letter, width, ascii_mode=False):
-    key = effective_button(doc, doc[letter + 'Button'], ascii_mode, True)
-    rect = dict(layout_rectangles(doc, 'keyboardLayout', width, doc['keyboardHeight']))[letter + 'Button']
+def hold_geometry(doc, letter, width, ascii_mode=False, button_name=None):
+    name = button_name or letter + 'Button'
+    key = effective_button(doc, doc[name], ascii_mode, True)
+    rect = dict(layout_rectangles(doc, 'keyboardLayout', width, doc['keyboardHeight']))[name]
     x, y, w, h = rect
     bounds = key.get('bounds', {})
     visible = length(bounds.get('width'), w)
@@ -20,7 +21,7 @@ def hold_geometry(doc, letter, width, ascii_mode=False):
     cell_w = length(grid['size']['width'], w)
     cell_h = length(grid['size']['height'], h)
     padding = grid['insets']
-    panel_w = 3 * cell_w + padding['left'] + padding['right']
+    panel_w = len(grid['symbolRows'][0]) * cell_w + padding['left'] + padding['right']
     panel_h = cell_h + padding['top'] + padding['bottom']
     panel_x = x + w / 2 - padding['left'] - (grid['anchor']['col'] + .5) * cell_w
     panel_y = y + doc['preeditHeight'] + doc['toolbarHeight'] + h / 2 + grid['offset']['y'] - cell_h / 2 - padding['top']
@@ -30,12 +31,15 @@ def hold_geometry(doc, letter, width, ascii_mode=False):
     return grid, (panel_x, panel_y, panel_w, panel_h), (cell_w, cell_h)
 
 
-def render_hold(letter, scheme, orientation='Portrait', width=390, ascii_mode=False):
+def render_hold(letter, scheme, orientation='Portrait', width=390, ascii_mode=False,
+                button_name=None, english_candidates_enabled=True):
     name = ('alphabetic' if ascii_mode else 'pinyin') + orientation
     doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
     image = render_keyboard(name, scheme, width, preedit='' if ascii_mode else '12pt 拼音预编辑示意',
-                            ascii_mode=ascii_mode, after_language_change=True).convert('RGBA')
-    grid, rect, cell_size = hold_geometry(doc, letter, width, ascii_mode)
+                            ascii_mode=ascii_mode, after_language_change=True,
+                            english_candidates_enabled=english_candidates_enabled).convert('RGBA')
+    option_mode = not english_candidates_enabled if ascii_mode else False
+    grid, rect, cell_size = hold_geometry(doc, letter, width, option_mode, button_name)
     x, y, w, h = rect
     background = doc[grid['backgroundStyle']]
     shadow = Image.new('RGBA', image.size)

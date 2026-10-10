@@ -18,17 +18,22 @@ class SchemeMemoryTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute('''
-            stored, writes, switches, commits = nil, 0, 0, 0
+            stored, stored_enabled, writes, switches, commits = nil, nil, 0, 0, 0
+            raw_commits = {}
             writable, deployed = true, true
             rime_api = {get_user_data_dir=function() return '/private/user' end}
             function Config()
                 local c = {}
-                function c:load_from_file(path) self.value=stored end
+                function c:load_from_file(path) self.value=stored; self.enabled=stored_enabled end
                 function c:get_string(key) return self.value end
+                function c:get_bool(key)
+                    if type(self.enabled)=='boolean' then return self.enabled end
+                end
                 function c:set_string(key,id) self.value=id end
+                function c:set_bool(key,enabled) self.enabled=enabled end
                 function c:save_to_file(path)
                     if not writable then return false end
-                    stored=self.value; writes=writes+1; return true
+                    stored=self.value; stored_enabled=self.enabled; writes=writes+1; return true
                 end
                 return c
             end
@@ -41,8 +46,11 @@ class SchemeMemoryTests(unittest.TestCase):
                 local ctx = {}
                 function ctx:commit() commits=commits+1 end
                 function ctx:set_option(key,val) self[key]=val end
+                function ctx:get_option(key) return self[key] or false end
+                function ctx:clear() self.input='' end
                 local e={schema=Schema(id),context=ctx}
                 function e:apply_schema(schema) self.schema=schema; switches=switches+1 end
+                function e:commit_text(text) table.insert(raw_commits,text) end
                 return {engine=e}
             end
             function key(release,ordinary)
@@ -114,6 +122,60 @@ class SchemeMemoryTests(unittest.TestCase):
             assert(stored=='rime_mint')
             memory.func(key(),env); memory.init(env); memory.func(key(),env)
             assert(env.engine.schema.schema_id=='rime_mint_flypy')
+        ''')
+
+    def test_candidate_toggle_commits_original_letters_once_and_preserves_schema(self):
+        self.run_lua('''
+            stored='rime_mint'
+            local env=make_env('melt_eng'); memory.init(env)
+            env.engine.context.input='Hel'
+            local k=key(); k.keycode=0xffc8
+            assert(memory.func(k,env)==1)
+            assert(env.engine.context.ascii_mode==true and stored_enabled==false)
+            assert(stored=='rime_mint' and switches==0 and commits==0)
+            assert(#raw_commits==1 and raw_commits[1]=='Hel')
+            assert(env.engine.context.input=='')
+            assert(memory.func(k,env)==1)
+            assert(env.engine.context.ascii_mode==false and stored_enabled==true)
+            assert(#raw_commits==1)
+        ''')
+
+    def test_saved_disabled_state_restores_on_start_and_every_english_entry(self):
+        self.run_lua('''
+            stored='rime_mint'; stored_enabled=false
+            local env=make_env('melt_eng'); memory.init(env)
+            assert(env.engine.context.ascii_mode==true and writes==0)
+            memory.func(key(),env)
+            assert(env.engine.schema.schema_id=='rime_mint' and env.engine.context.ascii_mode==false)
+            memory.init(env); assert(stored_enabled==false)
+            memory.func(key(),env)
+            assert(env.engine.schema.schema_id=='melt_eng' and env.engine.context.ascii_mode==true)
+            env=make_env('melt_eng'); memory.init(env)
+            assert(env.engine.context.ascii_mode==true)
+        ''')
+
+    def test_legacy_and_invalid_candidate_preference_default_enabled(self):
+        for saved in ('nil', "'bad'"):
+            self.setUp()
+            self.run_lua(f'stored_enabled={saved}')
+            self.run_lua('''
+                local env=make_env('melt_eng'); memory.init(env)
+                assert(env.engine.context.ascii_mode==false)
+            ''')
+
+    def test_candidate_key_ignores_chinese_and_release_and_keeps_memory_on_write_failure(self):
+        self.run_lua('''
+            local env=make_env('rime_mint'); memory.init(env)
+            local k=key(); k.keycode=0xffc8
+            assert(memory.func(k,env)==2 and stored_enabled==true)
+            env=make_env('melt_eng'); memory.init(env)
+            local released=key(true); released.keycode=0xffc8
+            assert(memory.func(released,env)==2)
+            writable=false
+            assert(memory.func(k,env)==1 and env.engine.context.ascii_mode==true)
+            assert(stored_enabled==true)
+            env=make_env('melt_eng'); memory.init(env)
+            assert(env.engine.context.ascii_mode==true)
         ''')
 
 

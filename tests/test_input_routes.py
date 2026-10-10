@@ -68,6 +68,33 @@ class InputRouteTests(unittest.TestCase):
         with self.assertRaises(SkinError):
             validate_action({'sendKeys': ''}, 'empty keys')
 
+    def test_english_comma_has_complete_single_action_hold_and_both_statuses(self):
+        from render_skin_preview import selected, effective_button
+        self.assertEqual(self.routes['candidateToggleKeys'], 'Control+Shift+F11')
+        for theme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('alphabetic' + orientation, theme)
+                original = doc['chineseCommaButton']
+                self.assertNotIn('repeatAction', original)
+                for ascii_mode in (False, True):
+                    for notified in (False, True):
+                        node = effective_button(doc, original, ascii_mode, notified)
+                        self.assertEqual(node['action'], {'symbol': ','})
+                        for field in ('size', 'backgroundStyle', 'hintSymbolsGridStyle', 'hintSymbolsStyle', 'swipeUpAction'):
+                            self.assertEqual(node[field], original[field])
+                        refs = selected(node['foregroundStyle'], ascii_mode)
+                        self.assertEqual(refs, ['phoneEnglishCommaLabel',
+                            'phoneCandidatesOffLabel' if ascii_mode else 'phoneCandidatesOnLabel'])
+                        self.assertEqual(doc[refs[0]]['text'], ',')
+                        self.assertEqual(doc[refs[1]]['fontSize'], 9)
+                grid = doc[original['hintSymbolsGridStyle']]
+                self.assertEqual(grid['size'], {'width': 88, 'height': 44})
+                self.assertEqual(grid['symbolRows'], [['phoneCandidateToggleOption']])
+                option = doc[grid['symbolRows'][0][0]]
+                self.assertEqual(option['action'], {'sendKeys': self.routes['candidateToggleKeys']})
+                self.assertEqual(doc[option['foregroundStyle']]['fontSize'], 12)
+                self.assertNotIn('hintSymbolsGridStyle', load('pinyin' + orientation, theme)['chineseCommaButton'])
+
 
 if __name__=='__main__':
     unittest.main()

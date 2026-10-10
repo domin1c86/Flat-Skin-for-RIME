@@ -141,7 +141,7 @@ def check(folder):
     }
     english_patch = {
         **common,
-        'switches/@0/reset': 0,
+        'switches/@0/reset': -1,
         'translator/enable_completion': True,
         'translator/enable_sentence': False,
         'translator/enable_user_dict': True,

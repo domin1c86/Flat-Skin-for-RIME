@@ -68,7 +68,7 @@ local names(row) = [name(c) for c in std.stringChars(row)];
       Button.system('backspaceButton', Keys.backspaceButton + Widths.iPhone.sideRight),
       Button.system('symbolicButton', Keys.symbolicButton + { text: '符号', size: { width: '1.5/10' } }),
       Button.system('numericButton', Keys.numericButton + Widths.iPhone.unit),
-      Phone.punctuation(insets, english),
+      Phone.punctuation(insets, english, isPortrait),
       Button.alphabetic('spaceButton', Keys.spaceButton + { size: { width: '3/10' } }, insets, hint=null),
       Phone.language(Widths.iPhone.unit, english), Phone.enter({ size: { width: '1.5/10' } }),
     ]),

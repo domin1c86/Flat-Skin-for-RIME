@@ -10,6 +10,18 @@ local fonts = import '../Constants/Fonts.libsonnet';
 local Keys = import '../Constants/Keys.libsonnet';
 local letterSymbols = import '../Constants/LetterSymbols.json';
 local Routes = import 'InputRoutes.libsonnet';
+local Hold = import 'iPhoneHold.libsonnet';
+
+local englishCommaForeground = [
+  Style.when('rime$ascii_mode', false, ['phoneEnglishCommaLabel', 'phoneCandidatesOnLabel']),
+  Style.when('rime$ascii_mode', true, ['phoneEnglishCommaLabel', 'phoneCandidatesOffLabel']),
+];
+local englishComma = {
+  size: { width: '1/10' }, backgroundStyle: Theme.alphabeticBackgroundName,
+  foregroundStyle: englishCommaForeground, action: { symbol: ',' },
+  swipeUpAction: Keys.chineseCommaButton.swipeUpAction,
+  hintSymbolsGridStyle: 'phoneCandidateToggleGrid', hintSymbolsStyle: 'phoneCandidateToggleList',
+};
 
 local returnForeground = [
   Style.when('$returnKeyType', [0], 'phoneReturnIcon'),
@@ -100,6 +112,14 @@ local text(label, extra={}) = Style.text({
       phoneAsciiNotification: optionNotification(Theme.systemBackgroundName, languageForeground, Keys.asciiModeButton.action),
       phoneChineseCommaLabel: punctuationIcon('comma'),
       phoneEnglishCommaLabel: text(',', { fontSize: fonts.keyLabel }),
+      [if english == true then 'phoneCandidatesOnLabel' else null]: text('词', { fontSize: 9, center: { x: 0.5, y: 0.18 },
+        normalColor: colors.blueButtonBackgroundColor, highlightColor: colors.blueButtonBackgroundColor }),
+      [if english == true then 'phoneCandidatesOffLabel' else null]: text('词', { fontSize: 9, center: { x: 0.5, y: 0.18 },
+        normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor }),
+      [if english == true then 'phoneCandidateToggleNotification' else null]: englishComma + {
+        notificationType: 'rime', rimeNotificationType: 'optionChanged',
+        rimeOptionName: 'ascii_mode', rimeOptionValue: true,
+      },
       phoneChinesePeriodLabel: punctuationIcon('period'),
       phoneEnglishPeriodLabel: text('.', { fontSize: fonts.keyLabel }),
       phoneCommaNotification: optionNotification(Theme.alphabeticBackgroundName, commaForeground, { symbol: ',' }),
@@ -119,11 +139,34 @@ local text(label, extra={}) = Style.text({
       action: Routes.toggle(english),
     }
   )),
-  punctuation(insets, english=null):: Style.merge([
+  punctuation(insets, english=null, isPortrait=true):: Style.merge([
     Button.alphabetic('chineseCommaButton', Keys.chineseCommaButton + { size: { width: '1/10' },
       foregroundStyle: if english == null then commaForeground else if english then 'phoneEnglishCommaLabel' else 'phoneChineseCommaLabel',
       action: { symbol: if english == true then ',' else '，' },
-      notification: if english == null then ['phoneCommaNotification'] else [] }, insets, hint=null),
+      notification: if english == null then ['phoneCommaNotification'] else [] }
+      + (if english == true then englishComma + { notification: ['phoneCandidateToggleNotification'] } else {}), insets, hint=null),
+    if english == true then Hold.shared + {
+      phoneCandidateToggleGrid: {
+        symbolRows: [['phoneCandidateToggleOption']], size: { width: 88, height: 44 },
+        insets: { top: 4, bottom: 4, left: 4, right: 4 },
+        anchor: { row: 0, col: 0 }, selected: { row: 0, col: 0 },
+        offset: { x: 0, y: if isPortrait then -55 else -49 },
+        moveStep: { horizontal: 88, vertical: 88 }, moveThreshold: 10,
+        checkIfOverflowsParentHeight: true, backgroundStyle: 'phoneHoldBackground',
+        selectedBackgroundStyle: 'phoneHoldSelectedBackground',
+      },
+      phoneCandidateToggleList: {
+        symbolStyles: ['phoneCandidateToggleOption'], size: { width: 88, height: 44 },
+        insets: { top: 4, bottom: 4, left: 4, right: 4 }, selectedIndex: 0,
+        checkIfOverflowsParentHeight: true, backgroundStyle: 'phoneHoldBackground',
+        selectedBackgroundStyle: 'phoneHoldSelectedBackground',
+      },
+      phoneCandidateToggleOption: { type: 'button', foregroundStyle: 'phoneCandidateToggleLabel',
+        action: { sendKeys: Routes.config.candidateToggleKeys },
+        uppercasedStateAction: { sendKeys: Routes.config.candidateToggleKeys } },
+      phoneCandidateToggleLabel: text('切换词库候选', { fontSize: 12,
+        normalColor: colors.standardCalloutForegroundColor, highlightColor: '#FFFFFF' }),
+    } else {},
     Button.alphabetic('chinesePeriodButton', Keys.chinesePeriodButton + { size: { width: '1/10' },
       foregroundStyle: if english == null then periodForeground else if english then 'phoneEnglishPeriodLabel' else 'phoneChinesePeriodLabel',
       action: { symbol: if english == true then '.' else '。' },

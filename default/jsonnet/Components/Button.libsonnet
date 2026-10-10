@@ -29,6 +29,8 @@ local passthroughKeys = [
   'swipeLeftAction',
   'swipeRightAction',
   'notification',
+  'hintSymbolsStyle',
+  'hintSymbolsGridStyle',
   'uppercasedStateForegroundStyle',
   'capsLockedStateForegroundStyle',
   'preeditStateForegroundStyle',

@@ -339,8 +339,10 @@ class GeneratedSkinTests(unittest.TestCase):
                     doc = load(('alphabetic' if english else 'pinyin') + orientation, scheme)
                     self.assertEqual(inspect_punctuation(doc, english), {})
                     for name in ('chineseCommaButton', 'chinesePeriodButton'):
-                        self.assertEqual(doc[name]['notification'], [])
-                        foreground = doc[doc[name]['foregroundStyle']]
+                        self.assertEqual(doc[name]['notification'], ['phoneCandidateToggleNotification']
+                            if english and name == 'chineseCommaButton' else [])
+                        refs = selected_styles(doc[name]['foregroundStyle'], {'rime$ascii_mode': False})
+                        foreground = doc[refs[0]]
                         if not english:
                             self.assertEqual(foreground['buttonStyleType'], 'fileImage')
                             drop = 28/3 if name == 'chineseCommaButton' else 8.5
