@@ -63,6 +63,9 @@ def main():
         output.clear();execute({'combine':[{'sendKeys':'Control+Shift+F9'}, {'symbol':','},
                                             {'sendKeys':'Control+Shift+F10'}]})
         assert output[-1]==',' and output.count(',')==1,output
+        engine.select_schema('double_pinyin_flypy')
+        prediction();assert engine.key(0xffc9,5) # direct hardware binding, no skin guard
+        assert engine.commit() is None and not engine.option('skin_context_prediction')
         schemes=json.loads((ROOT/'default/light/schemesPortrait.yaml').read_text(encoding='utf-8'))
         for schema in CHINESE+('melt_eng',):
             execute(schemes['scheme'+schema]['action'])

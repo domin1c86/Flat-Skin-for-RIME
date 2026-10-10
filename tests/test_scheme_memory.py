@@ -15,6 +15,16 @@ MODULE = ROOT / 'scripts/rime/skin_scheme_memory.lua'
 
 @unittest.skipUnless(AVAILABLE and MODULE.is_file(), 'user-file Lua fixture/lupa unavailable')
 class SchemeMemoryTests(unittest.TestCase):
+    def test_direct_toggle_cancels_unselected_prediction(self):
+        self.run_lua('''
+            local env=make_env('double_pinyin_flypy');memory.init(env)
+            env.engine.context.input='›';env.engine.context.skin_context_prediction=true
+            assert(memory.func(key(),env)==1)
+            assert(env.engine.context.input=='')
+            assert(env.engine.context.skin_context_prediction==false)
+            assert(env.engine.schema.schema_id=='melt_eng')
+        ''')
+
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute('''

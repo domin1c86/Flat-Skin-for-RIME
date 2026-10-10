@@ -77,7 +77,16 @@ function M.func(key, env)
   local schema = Schema(target)
   if schema.config:get_string("schema/schema_id") ~= target then return 2 end
   -- 与切换方案一致：先确认当前预编辑，再切换，避免丢失已输入文字。
-  env.engine.context:commit()
+  local context = env.engine.context
+  -- Direct hardware invocation also bypasses the skin's surrounding signals.
+  -- A prediction is a menu suggestion, not text the user has chosen to commit.
+  if context:get_option("skin_context_prediction") and context.input == "›" then
+    context:clear()
+    if context:get_option("skin_context_prediction") then
+      context:set_option("skin_context_prediction", false)
+    end
+  end
+  context:commit()
   env.engine:apply_schema(schema)
   env.engine.context:set_option("ascii_mode", target == english
       and not read_memory(env.memory_path).english_candidates_enabled or false)
