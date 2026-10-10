@@ -73,6 +73,8 @@ def patch_copy(source, patches):
                 current = current.setdefault(part, {})
         if parts[-1].startswith('@before '):
             current.insert(int(parts[-1].split()[1]), deepcopy(value))
+        elif parts[-1] == '+':
+            current.extend(deepcopy(value))
         else:
             current[parts[-1]] = deepcopy(value)
     return result
@@ -148,6 +150,15 @@ def check(folder):
         'recognizer/patterns/uppercase': '^$',
         'engine/filters': ['lua_filter@*autocap_filter', 'uniquifier'],
     }
+    chinese_patch = {**common,
+        'engine/processors/@before 1': 'lua_processor@*skin_context_processor',
+        'engine/translators/@before 0': 'lua_translator@*skin_context_translator',
+        'engine/filters/+': ['lua_filter@*skin_context_filter'],
+        'recognizer/patterns/skin_predict': '^›$',
+        'switches/+': [
+            {'name': 'context_learning', 'reset': 1, 'states': ['关闭关联学习', '开启关联学习']},
+            {'name': 'prediction', 'reset': 1, 'states': ['关闭联想', '开启联想']}],
+        'skin_context': {'timeout_seconds': 30, 'min_count': 2, 'max_predictions': 5}}
     schemas, dictionaries, lua_files, missing = set(), set(), set(), set()
 
     def dictionary(name):
@@ -194,7 +205,7 @@ def check(folder):
         require(source['switches'][0]['name'] == 'ascii_mode' and source['switches'][0]['reset'] == 0,
                 f'{schema_id}: ASCII index/default changed')
         changes = load(folder / (schema_id + '.custom.yaml'))['patch']
-        require(changes == (english_patch if schema_id == routes['english'] else common),
+        require(changes == (english_patch if schema_id == routes['english'] else chinese_patch),
                 f'{schema_id}: unexpected patch scope')
         effective = deepcopy(source)
         # Resolve only import_preset components needed for these checks.
@@ -206,11 +217,13 @@ def check(folder):
         for field in ('speller', 'schema'):
             require(effective[field] == source[field], f'{schema_id}: altered {field}')
         if schema_id != routes['english']:
-            for field in ('translator', 'melt_eng', 'cn_en', 'switches'):
+            for field in ('translator', 'melt_eng', 'cn_en'):
                 require(effective[field] == source[field], f'{schema_id}: altered Chinese {field}')
-            require(effective['engine']['processors'][1:] == source['engine']['processors'], 'changed original processors')
-            for field in ('filters', 'translators', 'segmentors'):
-                require(effective['engine'][field] == source['engine'][field], 'changed Chinese engine component')
+            require(effective['switches'][:-2] == source['switches'], 'changed original switches')
+            require(effective['engine']['processors'][2:] == source['engine']['processors'], 'changed original processors')
+            require(effective['engine']['translators'][1:] == source['engine']['translators'], 'changed original translators')
+            require(effective['engine']['filters'][:-1] == source['engine']['filters'], 'changed original filters')
+            require(effective['engine']['segmentors'] == source['engine']['segmentors'], 'changed original segmentors')
         else:
             patterns = effective['recognizer']['patterns']
             for word in ('hello', 'Hello', 'HELLO', 'Hel'):
@@ -222,6 +235,10 @@ def check(folder):
     require((folder / 'lua/skin_scheme_memory.lua').read_bytes() ==
             (ROOT / 'scripts/rime/skin_scheme_memory.lua').read_bytes(), 'stale scheme-memory processor copy')
     lua_files.add('skin_scheme_memory')
+    for name in ('skin_context', 'skin_context_processor', 'skin_context_translator', 'skin_context_filter'):
+        require((folder / 'lua' / (name + '.lua')).read_bytes() ==
+                (ROOT / 'scripts/rime' / (name + '.lua')).read_bytes(), f'stale {name} copy')
+        lua_files.add(name)
     return {'schemes': len(ids), 'dependency_schemas_present': len(schemas) - sum(name.endswith('.schema.yaml') for name in missing),
             'dictionary_headers': len(dictionaries) - sum(name.endswith('.dict.yaml') for name in missing),
             'missing_from_user_folder': sorted(missing), 'lua_modules_present': len(lua_files),

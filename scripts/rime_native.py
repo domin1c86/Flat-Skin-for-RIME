@@ -162,6 +162,7 @@ class Engine:
 
     def close(self):
         if self.session:
+            self.clear()
             self.lib.RimeDestroySession(self.session)
             self.session = 0
         self.lib.RimeFinalize()

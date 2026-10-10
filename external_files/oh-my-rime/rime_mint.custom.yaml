@@ -2,6 +2,14 @@
 # 保留全拼编码、词库、音节分隔和所有原有滤镜。
 patch:
   "engine/processors/@before 0": lua_processor@*skin_scheme_memory
+  "engine/processors/@before 1": lua_processor@*skin_context_processor
+  "engine/translators/@before 0": lua_translator@*skin_context_translator
+  "engine/filters/+": [lua_filter@*skin_context_filter]
+  "recognizer/patterns/skin_predict": "^›$"
+  "switches/+":
+    - {name: context_learning, reset: 1, states: [关闭关联学习, 开启关联学习]}
+    - {name: prediction, reset: 1, states: [关闭联想, 开启联想]}
+  "skin_context": {timeout_seconds: 30, min_count: 2, max_predictions: 5}
   "ascii_composer/good_old_caps_lock": false
   "ascii_composer/switch_key":
     Caps_Lock: noop
