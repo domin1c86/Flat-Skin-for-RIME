@@ -1,0 +1,25 @@
+# 扁平灰白皮肤配套：独立英文候选，不依靠 ASCII 直通。
+# 与 melt_eng.schema.yaml 同目录，重新部署后生效。
+# @0 已核对为这份用户文件中的 ascii_mode；升级后先核对开关顺序。
+patch:
+  "switches/@0/reset": 0
+  "translator/enable_completion": true
+  "translator/enable_sentence": false
+  "translator/enable_user_dict": true
+
+  # 避免 Hello / HELLO 被默认 uppercase 规则识别为直通片段。
+  # 保留默认的邮箱、网址识别；不会自动触发句首大写。
+  "recognizer/patterns/uppercase": "^$"
+  "engine/filters":
+    - lua_filter@*autocap_filter
+    - uniquifier
+
+  # 中英切换交给皮肤的布局 + 方案按钮；Shift / Caps 只控制大小写。
+  # 此设置也影响外接键盘，不再用 Shift / Caps 单键切换 ASCII。
+  "ascii_composer/good_old_caps_lock": false
+  "ascii_composer/switch_key":
+    Caps_Lock: noop
+    Shift_L: noop
+    Shift_R: noop
+    Control_L: noop
+    Control_R: noop
