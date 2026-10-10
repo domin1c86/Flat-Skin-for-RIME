@@ -57,6 +57,9 @@ def main():
         engine.option('prediction',False)
         engine.start();engine.option('prediction',False)
         select('xpxp','谢谢');engine.type('nage');assert engine.page()[0][0][0]=='那个'
+        engine.option('context_learning',False)
+        engine.type('li');engine.choose('莉');assert engine.commit()=='莉'
+        print('PASS: disabled learning preserves candidate pagination',flush=True)
         print('PASS: new session retains associations',flush=True)
     finally:
         engine.close()

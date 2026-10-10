@@ -15,7 +15,7 @@ class ContextLearningTests(unittest.TestCase):
     def setUp(self):
         self.lua = LuaRuntime(unpack_returned_tuples=True)
         self.lua.execute('''
-            clock, store, writes, closes, opens, raw = 100, {}, 0, 0, 0, {}
+            clock, store, writes, closes, opens, raw, option_writes = 100, {}, 0, 0, 0, {}, 0
             failing = false
             os.time = function() return clock end
             rime_api = {get_user_data_dir=function() return 'fixture' end}
@@ -50,8 +50,8 @@ class ContextLearningTests(unittest.TestCase):
                 function c:set_property(k,v) self.props[k]=v end
                 function c:get_option(k) return self.options[k] or false end
                 function c:set_option(k,v)
-                    local old=self.options[k];self.options[k]=v
-                    if old~=v then self.option_update_notifier:emit(self,k) end
+                    self.options[k]=v;option_writes=option_writes+1
+                    self.option_update_notifier:emit(self,k)
                 end
                 function c:get_commit_text() return self.text end
                 function c:clear() self.input='';self.update_notifier:emit(self) end
@@ -152,4 +152,13 @@ class ContextLearningTests(unittest.TestCase):
             mod.processor.fini(other);assert(closes==1)
             local before=writes;env.engine.context.commit_notifier:emit(env.engine.context)
             assert(writes==before)
+        ''')
+
+    def test_disabled_learning_does_not_rewrite_options_during_normal_keys(self):
+        self.lua.execute('''
+            env.engine.context:set_option('context_learning',false)
+            local before=option_writes
+            env.engine.context.input='li'
+            for i=1,5 do assert(mod.processor.func(key(0xff56,'Page_Down'),env)==2) end
+            assert(option_writes==before)
         ''')

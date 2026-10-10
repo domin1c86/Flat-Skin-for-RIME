@@ -30,9 +30,17 @@ local function active(env)
       and ctx:get_option("context_learning")
 end
 
+local function prediction_option(ctx, value)
+  -- Native Rime may recompose even when setting an option to its current value.
+  -- A no-op write during every key would reset selector pagination.
+  if ctx:get_option("skin_context_prediction") ~= value then
+    ctx:set_option("skin_context_prediction", value)
+  end
+end
+
 local function cancel(ctx, st)
   st.want_predict, st.predicting = false, false
-  ctx:set_option("skin_context_prediction", false)
+  prediction_option(ctx, false)
   if ctx.input == marker then ctx:clear() end
 end
 
@@ -137,12 +145,12 @@ function M.processor.init(env)
   if ok then st.db = db end
   states[env.id] = st
   ctx:set_property("skin_context_id", env.id)
-  ctx:set_option("skin_context_prediction", false)
+  prediction_option(ctx, false)
   env.commit_connection = ctx.commit_notifier:connect(function(c)
     local text = c:get_commit_text()
     local predicted = st.predicting and c.input == marker
     st.want_predict, st.predicting, st.undo = false, false, nil
-    c:set_option("skin_context_prediction", false)
+    prediction_option(c, false)
     if not active(env) or not han(text) then reset(c,st); return end
     local previous = preceding(st)
     if previous then remember(st, previous, text) end
@@ -155,11 +163,11 @@ function M.processor.init(env)
   env.update_connection = ctx.update_notifier:connect(function(c)
     if st.want_predict and c.input == "" and active(env) and c:get_option("prediction") then
       st.want_predict, st.predicting = false, true
-      c:set_option("skin_context_prediction",true)
+      prediction_option(c,true)
       c:push_input(marker)
     elseif st.predicting and c.input ~= marker then
       st.predicting = false
-      c:set_option("skin_context_prediction",false)
+      prediction_option(c,false)
     end
   end)
   env.option_connection = ctx.option_update_notifier:connect(function(c,name)
