@@ -42,6 +42,14 @@ class ValidatorRegressionTests(unittest.TestCase):
         with self.assertRaisesRegex(SkinError, 'invalid color'):
             validate_document(self.doc)
 
+    def test_missing_swipe_callout_reference_fails(self):
+        for direction in ('Up', 'Down'):
+            with self.subTest(direction=direction):
+                doc = load('pinyinPortrait')
+                doc['qButtonHintStyle']['swipe' + direction + 'ForegroundStyle'] = 'missingCallout'
+                with self.assertRaisesRegex(SkinError, 'missing reference missingCallout'):
+                    validate_document(doc)
+
     def test_mixed_layout_fails(self):
         self.doc['keyboardLayout'].append({'Cell': 'qButton'})
         with self.assertRaisesRegex(SkinError, 'mixed/unknown'):
@@ -123,6 +131,25 @@ class GeneratedSkinTests(unittest.TestCase):
                 self.assertNotIn('action', notification)
                 self.assertEqual(node['action'], {'character': letter})
                 self.assertEqual(node['uppercasedStateAction'], {'character': letter.upper()})
+
+    def test_swipe_callouts_match_all_twenty_six_actions(self):
+        for scheme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('pinyin' + orientation, scheme)
+                for letter in 'qwertyuiopasdfghjklzxcvbnm':
+                    with self.subTest(scheme=scheme, orientation=orientation, letter=letter):
+                        node = doc[letter + 'Button']
+                        callout = doc[node['hintStyle']]
+                        swipe = doc[callout['swipeUpForegroundStyle']]
+                        normal = doc[callout['foregroundStyle']]
+                        self.assertEqual(swipe['buttonStyleType'], 'text')
+                        self.assertEqual(swipe['text'], next(iter(node['swipeUpAction'].values())))
+                        self.assertEqual(normal['text'], letter.upper())
+                        self.assertEqual(swipe['fontSize'], normal['fontSize'])
+                        self.assertEqual(swipe['normalColor'], normal['normalColor'])
+                        # Language/Shift only change the key face; neither overrides the callout.
+                        for notification in node.get('notification', []):
+                            self.assertNotIn('hintStyle', doc[notification])
 
     def test_function_row_order(self):
         doc = load('pinyinPortrait')

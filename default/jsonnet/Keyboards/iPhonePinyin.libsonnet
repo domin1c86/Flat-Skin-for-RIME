@@ -46,6 +46,12 @@ local names(row) = [name(c) for c in std.stringChars(row)];
           backgroundStyle: Theme.alphabeticBackgroundName, foregroundStyle: chineseForeground,
         },
         [upperName]+: { center: { y: 0.59 } },
+        // 上划气泡需要独立前景，否则会继续显示普通按键的字母。
+        [n + 'HintStyle']+: { swipeUpForegroundStyle: n + 'SwipeHintForegroundStyle' },
+        [n + 'SwipeHintForegroundStyle']: Style.text({
+          text: Phone.letterHints[c], fontSize: fonts.hintLabel,
+          normalColor: colors.standardCalloutForegroundColor,
+        }),
       };
     Style.merge([
       Phone.base(isPortrait, mainControls=true),

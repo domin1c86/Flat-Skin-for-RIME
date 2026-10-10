@@ -22,6 +22,7 @@ SKIN = ROOT / "default"
 REFERENCE_FIELDS = {
     "backgroundStyle", "foregroundStyle", "uppercasedStateForegroundStyle",
     "capsLockedStateForegroundStyle", "preeditStateForegroundStyle", "hintStyle",
+    "swipeUpForegroundStyle", "swipeDownForegroundStyle",
     "hintSymbolsStyle", "hintSymbolsGridStyle", "candidateStyle", "cellStyle",
     "selectedBackgroundStyle", "styleName", "style", "notification", "dataSource",
 }
