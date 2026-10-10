@@ -98,9 +98,9 @@
     .home-area { height:calc(34 * var(--u)); display:grid; align-items:end; justify-content:center; padding-bottom:calc(8 * var(--u)); }
     .home-indicator { width:calc(120 * var(--u)); height:calc(4 * var(--u)); border-radius:99px; background:var(--foreground); opacity:.3; }
     .feedback { position:absolute; top:calc(1 * var(--u)); right:calc(9 * var(--u)); font-size:calc(11 * var(--u)); color:var(--secondary); pointer-events:none; }
-    .hold-popup { box-sizing:content-box; display:flex; width:calc(120 * var(--u)); padding:calc(4 * var(--u)); border:calc(.5 * var(--u)) solid var(--hint); border-radius:calc(8.5 * var(--u)); background:var(--key); color:var(--foreground); }
-    .hold-popup.live { position:absolute; z-index:5; pointer-events:none; box-shadow:0 calc(3 * var(--u)) calc(12 * var(--u)) #0002; }
-    .hold-option { display:grid; place-items:center; flex:0 0 calc(40 * var(--u)); height:calc(44 * var(--u)); border-radius:calc(5 * var(--u)); font-size:calc(22.5 * var(--u)); line-height:1; }
+    .hold-popup { box-sizing:content-box; display:flex; width:calc(120 * var(--u)); padding:calc(4 * var(--u)); border:0; border-radius:calc(var(--radius) * var(--u)); background:var(--key); color:var(--foreground); box-shadow:0 calc(1 * var(--u)) 0 var(--edge); }
+    .hold-popup.live { position:absolute; z-index:5; pointer-events:none; }
+    .hold-option { display:grid; place-items:center; flex:0 0 calc(40 * var(--u)); height:calc(44 * var(--u)); border-radius:calc(var(--radius) * var(--u)); font-size:calc(22.5 * var(--u)); line-height:1; }
     .hold-option[aria-selected="true"] { background:#007aff; color:#fff; }
     body[data-mode="dark"] .hold-option[aria-selected="true"] { background:#0a84ff; }
     .hold-guide { margin:0 0 26px; padding:20px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
@@ -155,14 +155,14 @@
     </section>
     <section class="hold-guide" aria-labelledby="hold-title">
       <h2 id="hold-title">长按三选气泡</h2>
-      <p>按住字母 450ms，左右滑动选择，松手输入。气泡打开后，上滑不再另行输入上标；滑远后取消，移回可继续选择。下面展示 F 键的三种选中状态。</p>
+      <p>按住字母 300ms，左右滑动选择，松手输入。常规顺序：大写／符号／小写；左缘：符号／大写／小写；右缘：小写／大写／符号。边缘气泡将最外侧选项对齐按键。气泡打开后，上滑不再另行输入上标；滑远后取消，移回可继续选择。</p>
       <div class="hold-examples"></div>
       <button type="button" data-zoom="flat">体验扁平灰白 · 长按任意字母</button>
     </section>
     <section class="comparison" aria-label="三种皮肤对照"></section>
     <footer class="help"><p>点击试输入 · 上划输入上标 · 长按左右滑选 · 松手确认</p><p>仅网页预览，未修改实际皮肤；长按时间与手势仍需元书实机验证。</p></footer>
   </main>
-  <dialog class="zoom-dialog" aria-labelledby="zoom-title"><div class="zoom-header"><h2 id="zoom-title"></h2><button class="dialog-close" type="button">关闭</button></div><div class="zoom-settings"><div class="segments" role="group" aria-label="放大预览颜色"><button type="button" data-setting="mode" data-value="light">浅色</button><button type="button" data-setting="mode" data-value="dark">深色</button></div><div class="segments" role="group" aria-label="放大预览方向"><button type="button" data-setting="orientation" data-value="portrait">竖屏</button><button type="button" data-setting="orientation" data-value="landscape">横屏</button></div><button type="button" data-action="language" class="zoom-language">中英切换</button><button type="button" data-action="shift" class="zoom-shift">Shift</button></div><div class="zoom-content"></div><p class="zoom-help">按住字母 450ms → 左右滑选 → 松手输入<br>中文状态也直接输入选中字母；此处不接入 RIME。</p></dialog>
+  <dialog class="zoom-dialog" aria-labelledby="zoom-title"><div class="zoom-header"><h2 id="zoom-title"></h2><button class="dialog-close" type="button">关闭</button></div><div class="zoom-settings"><div class="segments" role="group" aria-label="放大预览颜色"><button type="button" data-setting="mode" data-value="light">浅色</button><button type="button" data-setting="mode" data-value="dark">深色</button></div><div class="segments" role="group" aria-label="放大预览方向"><button type="button" data-setting="orientation" data-value="portrait">竖屏</button><button type="button" data-setting="orientation" data-value="landscape">横屏</button></div><button type="button" data-action="language" class="zoom-language">中英切换</button><button type="button" data-action="shift" class="zoom-shift">Shift</button></div><div class="zoom-content"></div><p class="zoom-help">按住字母 300ms → 左右滑选 → 松手输入<br>中文状态也直接输入选中字母；此处不接入 RIME。</p></dialog>
   <script>
     'use strict';
     // Every skin renders the same keyboard model; only CSS palette tokens vary.
@@ -253,7 +253,7 @@
       document.querySelectorAll('[data-setting]').forEach(button=>button.setAttribute('aria-pressed',String(state[button.dataset.setting]===button.dataset.value)));
       document.querySelectorAll('.keyboard').forEach(element=>element.innerHTML=keyboardMarkup());
       const fOptions=holdOptions('f');
-      document.querySelector('.hold-examples').innerHTML=fOptions.map((value,index)=>`<div class="device hold-example" data-style="flat">${holdMarkup(fOptions,index)}<span class="hold-example-label">${index===0?'另一种大小写':index===1?'当前字母':'对应符号'} · ${escapeHTML(value)}</span></div>`).join('');
+      document.querySelector('.hold-examples').innerHTML=fOptions.map((value,index)=>`<div class="device hold-example" data-style="flat">${holdMarkup(fOptions,index)}<span class="hold-example-label">${index===0?'大写字母':index===1?'对应符号':'小写字母'} · ${escapeHTML(value)}</span></div>`).join('');
       document.querySelector('.zoom-language').textContent=state.language==='zh'?'中文 · 切换 English':'English · 切换中文';
       document.querySelector('.zoom-shift').textContent=state.shift===2?'大写锁定':state.shift===1?'Shift 已开启':'Shift';
       document.querySelectorAll('.style-footer').forEach(element=>{
@@ -349,9 +349,9 @@
     // Once a hold opens, this pointer belongs exclusively to the candidate picker.
     const gestures=new Map();
     const suppressedClicks=new WeakSet();
-    function holdOptions(letter) {
-      const upper=state.language==='zh'||state.shift>0;
-      return [upper?letter:letter.toUpperCase(),upper?letter.toUpperCase():letter,hints[letter]];
+    function holdOptions(letter,placement='center') {
+      const upper=letter.toUpperCase(),symbol=hints[letter];
+      return placement==='left'?[symbol,upper,letter]:placement==='right'?[letter,upper,symbol]:[upper,symbol,letter];
     }
     function holdMarkup(options,index,live=false) {
       return `<div class="hold-popup${live?' live':''}" role="listbox" aria-label="长按候选">${options.map((value,i)=>`<span class="hold-option" role="option" aria-selected="${i===index}">${escapeHTML(value)}</span>`).join('')}</div>`;
@@ -374,21 +374,37 @@
     function showHold(id) {
       const gesture=gestures.get(id);
       if(!gesture || !gesture.button.isConnected || state.page!=='main' || state.panel)return;
-      gesture.holding=true;gesture.options=holdOptions(gesture.button.dataset.value);gesture.selected=1;
       const keyboard=gesture.button.closest('.keyboard');
-      keyboard.insertAdjacentHTML('beforeend',holdMarkup(gesture.options,1,true));
-      gesture.popup=keyboard.querySelector('.hold-popup.live');
       const board=keyboard.getBoundingClientRect(),keyRect=gesture.button.getBoundingClientRect();
-      const popupWidth=128*gesture.unit+gesture.unit; // Includes the thin panel border.
-      const x=Math.max(4*gesture.unit,Math.min(board.width-popupWidth-4*gesture.unit,keyRect.x-board.x+(keyRect.width-popupWidth)/2));
-      const y=Math.max(2*gesture.unit,keyRect.y-board.y-53*gesture.unit-6*gesture.unit);
+      const keyCenter=(keyRect.x-board.x+keyRect.width/2)/gesture.unit;
+      const boardWidth=board.width/gesture.unit;
+      const centeredX=keyCenter-64;
+      const placement=centeredX<0?'left':centeredX+128>boardWidth?'right':'center';
+      // Edge option centers align with the pressed key. For the extreme outer key,
+      // narrow only that option enough to fit; retain font size and the other cells.
+      const edgeWidth=placement==='left'?Math.min(40,2*(keyCenter-4)):
+        placement==='right'?Math.min(40,2*(boardWidth-keyCenter-4)):40;
+      const popupWidth=88+edgeWidth;
+      const left=placement==='left'?keyCenter-4-edgeWidth/2:
+        placement==='right'?keyCenter-84-edgeWidth/2:centeredX;
+      gesture.holding=true;
+      gesture.options=holdOptions(gesture.button.dataset.value,placement);
+      const current=state.language==='zh'||state.shift>0?gesture.button.dataset.value.toUpperCase():gesture.button.dataset.value;
+      gesture.initialIndex=gesture.options.indexOf(current);gesture.selected=gesture.initialIndex;
+      keyboard.insertAdjacentHTML('beforeend',holdMarkup(gesture.options,gesture.selected,true));
+      gesture.popup=keyboard.querySelector('.hold-popup.live');
+      gesture.popup.dataset.placement=placement;
+      gesture.popup.style.width=(popupWidth-8)*gesture.unit+'px';
+      if(placement!=='center')gesture.popup.children[placement==='left'?0:2].style.flexBasis=edgeWidth*gesture.unit+'px';
+      const x=left*gesture.unit;
+      const y=Math.max(2*gesture.unit,keyRect.y-board.y-52*gesture.unit-6*gesture.unit);
       gesture.popup.style.left=x+'px';gesture.popup.style.top=y+'px';
       updateHold(gesture,gesture.lastX,gesture.lastY);
     }
     function updateHold(gesture,x,y) {
       const dx=(x-gesture.x)/gesture.unit,dy=(y-gesture.y)/gesture.unit;
       // A one-row grid has no vertical candidate. Moving far away cancels selection.
-      const column=Math.abs(dx)<=10?1:1+Math.round(dx/24);
+      const column=Math.abs(dx)<=10?gesture.initialIndex:gesture.initialIndex+Math.round(dx/24);
       gesture.selected=Math.abs(dy)>44 || column<0 || column>2 ? -1 : column;
       gesture.popup.querySelectorAll('[role="option"]').forEach((option,i)=>option.setAttribute('aria-selected',String(i===gesture.selected)));
     }
@@ -411,7 +427,7 @@
       const unit=button.closest('.keyboard').getBoundingClientRect().width/(state.orientation==='landscape'?680:390);
       const gesture={button,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,unit,holding:false,timer:null};
       gestures.set(event.pointerId,gesture);
-      if(button.dataset.action==='letter' && !state.panel)gesture.timer=setTimeout(()=>showHold(event.pointerId),450);
+      if(button.dataset.action==='letter' && !state.panel)gesture.timer=setTimeout(()=>showHold(event.pointerId),300);
       event.preventDefault();
     });
     document.addEventListener('pointermove',event=>{
