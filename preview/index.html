@@ -98,6 +98,22 @@
     .home-area { height:calc(34 * var(--u)); display:grid; align-items:end; justify-content:center; padding-bottom:calc(8 * var(--u)); }
     .home-indicator { width:calc(120 * var(--u)); height:calc(4 * var(--u)); border-radius:99px; background:var(--foreground); opacity:.3; }
     .feedback { position:absolute; top:calc(1 * var(--u)); right:calc(9 * var(--u)); font-size:calc(11 * var(--u)); color:var(--secondary); pointer-events:none; }
+    .hold-popup { box-sizing:content-box; display:flex; width:calc(120 * var(--u)); padding:calc(4 * var(--u)); border:calc(.5 * var(--u)) solid var(--hint); border-radius:calc(8.5 * var(--u)); background:var(--key); color:var(--foreground); }
+    .hold-popup.live { position:absolute; z-index:5; pointer-events:none; box-shadow:0 calc(3 * var(--u)) calc(12 * var(--u)) #0002; }
+    .hold-option { display:grid; place-items:center; flex:0 0 calc(40 * var(--u)); height:calc(44 * var(--u)); border-radius:calc(5 * var(--u)); font-size:calc(22.5 * var(--u)); line-height:1; }
+    .hold-option[aria-selected="true"] { background:#007aff; color:#fff; }
+    body[data-mode="dark"] .hold-option[aria-selected="true"] { background:#0a84ff; }
+    .hold-guide { margin:0 0 26px; padding:20px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+    .hold-guide h2 { margin-bottom:8px; }
+    .hold-guide p { margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.8; }
+    .hold-guide button { border:0; border-radius:7px; padding:9px 14px; background:var(--selected); color:var(--on-selected); }
+    .hold-examples { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+    .hold-example { --u:1px; --canvas-width:390; padding:16px 8px; display:grid; justify-items:center; gap:10px; background:var(--board); }
+    .hold-example .hold-popup { box-sizing:content-box; width:auto; }
+    .hold-example-label { font-size:12px; color:var(--secondary); }
+    .zoom-settings { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:16px; }
+    .zoom-settings > button { border:1px solid var(--line); border-radius:7px; padding:7px 10px; background:var(--surface); font-size:13px; }
+    .zoom-help { font-size:12px; color:var(--muted); line-height:1.8; margin:14px 0 0; text-align:center; }
     .tool-panel { position:absolute; inset:calc(65 * var(--u)) calc(6 * var(--u)) calc(34 * var(--u)); z-index:2; padding:calc(16 * var(--u)); border-radius:calc(12 * var(--u)); background:var(--key); box-shadow:0 3px 18px #00000018; overflow:auto; }
     .panel-header { display:flex; justify-content:space-between; align-items:center; font-size:calc(17 * var(--u)); margin-bottom:calc(12 * var(--u)); }
     .panel-close { background:transparent; border:0; padding:calc(6 * var(--u)); font-size:calc(19 * var(--u)); }
@@ -122,6 +138,7 @@
     body[data-orientation="landscape"] .zoom-dialog .device { max-width:680px; }
     @media (max-width:860px) { .page { padding:32px 20px 24px; } .comparison { grid-template-columns:1fr; gap:36px; max-width:460px; margin:auto; } h1 { font-size:29px; } .wordmark { display:none; } .controls { gap:16px 24px; } .style-description { margin-bottom:12px; } }
     @media (max-width:400px) { .page { padding-inline:14px; } .controls { align-items:flex-start; } .control-group { gap:8px; } .segments button { padding:7px 11px; } h1 { font-size:26px; } }
+    @media (max-width:600px) { .hold-examples { grid-template-columns:1fr; } .zoom-dialog { padding:14px; } .hold-guide { padding:16px; } }
     @media (prefers-reduced-motion:no-preference) { .segments button { transition:background .15s,color .15s; } }
   </style>
 </head>
@@ -136,10 +153,16 @@
       <div class="control-group"><span class="control-label">颜色</span><div class="segments" role="group" aria-label="颜色模式"><button type="button" data-setting="mode" data-value="light" aria-pressed="true">浅色</button><button type="button" data-setting="mode" data-value="dark" aria-pressed="false">深色</button></div></div>
       <div class="control-group"><span class="control-label">方向</span><div class="segments" role="group" aria-label="屏幕方向"><button type="button" data-setting="orientation" data-value="portrait" aria-pressed="true">竖屏</button><button type="button" data-setting="orientation" data-value="landscape" aria-pressed="false">横屏</button></div></div>
     </section>
+    <section class="hold-guide" aria-labelledby="hold-title">
+      <h2 id="hold-title">长按三选气泡</h2>
+      <p>按住字母 450ms，左右滑动选择，松手输入。气泡打开后，上滑不再另行输入上标；滑远后取消，移回可继续选择。下面展示 F 键的三种选中状态。</p>
+      <div class="hold-examples"></div>
+      <button type="button" data-zoom="flat">体验扁平灰白 · 长按任意字母</button>
+    </section>
     <section class="comparison" aria-label="三种皮肤对照"></section>
-    <footer class="help"><p>点击按键试输入 · 字母上划输入上标 · 右上角可放大查看</p><p>设计预览，功能使用本地演示；最终效果以元书实机为准。</p></footer>
+    <footer class="help"><p>点击试输入 · 上划输入上标 · 长按左右滑选 · 松手确认</p><p>仅网页预览，未修改实际皮肤；长按时间与手势仍需元书实机验证。</p></footer>
   </main>
-  <dialog class="zoom-dialog" aria-labelledby="zoom-title"><div class="zoom-header"><h2 id="zoom-title"></h2><button class="dialog-close" type="button">关闭</button></div><div class="zoom-content"></div></dialog>
+  <dialog class="zoom-dialog" aria-labelledby="zoom-title"><div class="zoom-header"><h2 id="zoom-title"></h2><button class="dialog-close" type="button">关闭</button></div><div class="zoom-settings"><div class="segments" role="group" aria-label="放大预览颜色"><button type="button" data-setting="mode" data-value="light">浅色</button><button type="button" data-setting="mode" data-value="dark">深色</button></div><div class="segments" role="group" aria-label="放大预览方向"><button type="button" data-setting="orientation" data-value="portrait">竖屏</button><button type="button" data-setting="orientation" data-value="landscape">横屏</button></div><button type="button" data-action="language" class="zoom-language">中英切换</button><button type="button" data-action="shift" class="zoom-shift">Shift</button></div><div class="zoom-content"></div><p class="zoom-help">按住字母 450ms → 左右滑选 → 松手输入<br>中文状态也直接输入选中字母；此处不接入 RIME。</p></dialog>
   <script>
     'use strict';
     // Every skin renders the same keyboard model; only CSS palette tokens vary.
@@ -224,10 +247,15 @@
       return `<div class="device" data-style="${style.id}"><div class="editor"><div class="editor-label"><span>试输入</span><span>本地演示</span></div><textarea aria-label="${style.name}输入演示" placeholder="从任意一套键盘开始输入" spellcheck="false"></textarea></div><div class="keyboard">${keyboardMarkup()}</div></div>`;
     }
     function render() {
+      cancelGestures();
       document.body.dataset.mode=state.mode;
       document.body.dataset.orientation=state.orientation;
       document.querySelectorAll('[data-setting]').forEach(button=>button.setAttribute('aria-pressed',String(state[button.dataset.setting]===button.dataset.value)));
       document.querySelectorAll('.keyboard').forEach(element=>element.innerHTML=keyboardMarkup());
+      const fOptions=holdOptions('f');
+      document.querySelector('.hold-examples').innerHTML=fOptions.map((value,index)=>`<div class="device hold-example" data-style="flat">${holdMarkup(fOptions,index)}<span class="hold-example-label">${index===0?'另一种大小写':index===1?'当前字母':'对应符号'} · ${escapeHTML(value)}</span></div>`).join('');
+      document.querySelector('.zoom-language').textContent=state.language==='zh'?'中文 · 切换 English':'English · 切换中文';
+      document.querySelector('.zoom-shift').textContent=state.shift===2?'大写锁定':state.shift===1?'Shift 已开启':'Shift';
       document.querySelectorAll('.style-footer').forEach(element=>{
         const style=styles.find(item=>item.id===element.dataset.style);
         element.innerHTML=style.colors[state.mode].map(color=>`<span class="swatch" style="--swatch:${color}" aria-hidden="true"></span>`).join('')+`<span>8.5 pt 圆角 · ${style.detail}</span>`;
@@ -290,11 +318,19 @@
       }
     }
     comparison.innerHTML=styles.map((style,index)=>`<article class="style-card" aria-labelledby="heading-${style.id}"><div class="style-heading"><span class="style-number">0${index+1}</span><h2 id="heading-${style.id}">${style.name}</h2><button type="button" class="zoom" data-zoom="${style.id}" aria-label="放大${style.name}">${icon('expand')}</button></div><p class="style-description">${style.description}</p>${deviceMarkup(style)}<div class="style-footer" data-style="${style.id}"></div></article>`).join('');
+    function openZoom(styleId) {
+      cancelGestures();
+      const style=styles.find(item=>item.id===styleId);
+      document.querySelector('#zoom-title').textContent=style.name;
+      document.querySelector('.zoom-content').innerHTML=deviceMarkup(style);
+      render();
+      if(!dialog.open)dialog.showModal();
+    }
     document.addEventListener('click',event=>{
       const setting=event.target.closest('[data-setting]');
       if(setting){state[setting.dataset.setting]=setting.dataset.value;if(setting.dataset.setting==='page'){state.panel=null;state.dismissed=false;state.symbolReturn='main';}render();return;}
       const zoom=event.target.closest('[data-zoom]');
-      if(zoom){const style=styles.find(item=>item.id===zoom.dataset.zoom);document.querySelector('#zoom-title').textContent=style.name;document.querySelector('.zoom-content').innerHTML=deviceMarkup(style);syncText();dialog.showModal();return;}
+      if(zoom){openZoom(zoom.dataset.zoom);return;}
       if(event.target.closest('.dialog-close')){dialog.close();return;}
       const button=event.target.closest('[data-action]');
       if(button) activate(button);
@@ -310,42 +346,109 @@
     document.addEventListener('keyup',rememberSelection);
     document.addEventListener('pointerup',rememberSelection);
     document.addEventListener('focusin',rememberSelection);
-    // Capture the gesture on its key so dragging outside still completes reliably.
+    // Once a hold opens, this pointer belongs exclusively to the candidate picker.
     const gestures=new Map();
     const suppressedClicks=new WeakSet();
+    function holdOptions(letter) {
+      const upper=state.language==='zh'||state.shift>0;
+      return [upper?letter:letter.toUpperCase(),upper?letter.toUpperCase():letter,hints[letter]];
+    }
+    function holdMarkup(options,index,live=false) {
+      return `<div class="hold-popup${live?' live':''}" role="listbox" aria-label="长按候选">${options.map((value,i)=>`<span class="hold-option" role="option" aria-selected="${i===index}">${escapeHTML(value)}</span>`).join('')}</div>`;
+    }
+    function suppressClick(button) { suppressedClicks.add(button); }
+    function clearGesture(id) {
+      const gesture=gestures.get(id);
+      if(!gesture)return;
+      gestures.delete(id);
+      clearTimeout(gesture.timer);
+      gesture.popup?.remove();
+      gesture.button.classList.remove('is-pressed');
+      // Delete first: releasing capture can synchronously dispatch lostpointercapture.
+      if(gesture.button.hasPointerCapture(id))gesture.button.releasePointerCapture(id);
+      return gesture;
+    }
+    function cancelGestures() {
+      for(const [id,gesture] of gestures){suppressClick(gesture.button);clearGesture(id);}
+    }
+    function showHold(id) {
+      const gesture=gestures.get(id);
+      if(!gesture || !gesture.button.isConnected || state.page!=='main' || state.panel)return;
+      gesture.holding=true;gesture.options=holdOptions(gesture.button.dataset.value);gesture.selected=1;
+      const keyboard=gesture.button.closest('.keyboard');
+      keyboard.insertAdjacentHTML('beforeend',holdMarkup(gesture.options,1,true));
+      gesture.popup=keyboard.querySelector('.hold-popup.live');
+      const board=keyboard.getBoundingClientRect(),keyRect=gesture.button.getBoundingClientRect();
+      const popupWidth=128*gesture.unit+gesture.unit; // Includes the thin panel border.
+      const x=Math.max(4*gesture.unit,Math.min(board.width-popupWidth-4*gesture.unit,keyRect.x-board.x+(keyRect.width-popupWidth)/2));
+      const y=Math.max(2*gesture.unit,keyRect.y-board.y-53*gesture.unit-6*gesture.unit);
+      gesture.popup.style.left=x+'px';gesture.popup.style.top=y+'px';
+      updateHold(gesture,gesture.lastX,gesture.lastY);
+    }
+    function updateHold(gesture,x,y) {
+      const dx=(x-gesture.x)/gesture.unit,dy=(y-gesture.y)/gesture.unit;
+      // A one-row grid has no vertical candidate. Moving far away cancels selection.
+      const column=Math.abs(dx)<=10?1:1+Math.round(dx/24);
+      gesture.selected=Math.abs(dy)>44 || column<0 || column>2 ? -1 : column;
+      gesture.popup.querySelectorAll('[role="option"]').forEach((option,i)=>option.setAttribute('aria-selected',String(i===gesture.selected)));
+    }
     document.addEventListener('click',event=>{
       const button=event.target.closest('.key');
-      if(button && suppressedClicks.has(button)){event.preventDefault();event.stopPropagation();suppressedClicks.delete(button);}
+      // Retain cancellation until the next pointerdown, even after a long pause.
+      // Keyboard/assistive clicks (detail=0) still work without a pointer gesture.
+      if(button && event.detail!==0 && suppressedClicks.has(button)){event.preventDefault();event.stopPropagation();}
     },true);
+    document.addEventListener('contextmenu',event=>{if(event.target.closest('.key'))event.preventDefault();});
     document.addEventListener('pointerdown',event=>{
       const button=event.target.closest('.key');
       if(!button || event.button!==0)return;
+      if(gestures.size){event.preventDefault();suppressClick(button);return;}
+      suppressedClicks.delete(button);
       const active=document.activeElement;
       if(active?.matches('.editor textarea')){state.start=active.selectionStart;state.end=active.selectionEnd;}
       button.classList.add('is-pressed');
       button.setPointerCapture(event.pointerId);
-      gestures.set(event.pointerId,{button,x:event.clientX,y:event.clientY});
+      const unit=button.closest('.keyboard').getBoundingClientRect().width/(state.orientation==='landscape'?680:390);
+      const gesture={button,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,unit,holding:false,timer:null};
+      gestures.set(event.pointerId,gesture);
+      if(button.dataset.action==='letter' && !state.panel)gesture.timer=setTimeout(()=>showHold(event.pointerId),450);
       event.preventDefault();
+    });
+    document.addEventListener('pointermove',event=>{
+      const gesture=gestures.get(event.pointerId);if(!gesture)return;
+      gesture.lastX=event.clientX;gesture.lastY=event.clientY;
+      if(gesture.holding)updateHold(gesture,event.clientX,event.clientY);
+      else if(Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)>10*gesture.unit)clearTimeout(gesture.timer);
     });
     document.addEventListener('pointerup',event=>{
       const gesture=gestures.get(event.pointerId);
       if(!gesture)return;
-      gestures.delete(event.pointerId);gesture.button.classList.remove('is-pressed');
-      const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
-      const swiped=dy < -12 && Math.abs(dy)>Math.abs(dx);
-      // Swipes and large drags must not produce a second synthetic click.
-      if(swiped || Math.hypot(dx,dy)>12){
-        suppressedClicks.add(gesture.button);
-        setTimeout(()=>suppressedClicks.delete(gesture.button),0);
-        if(swiped && gesture.button.dataset.hint)activate(gesture.button,true);
+      suppressClick(gesture.button);
+      if(gesture.holding){
+        updateHold(gesture,event.clientX,event.clientY);
+        const value=gesture.options[gesture.selected];
+        clearGesture(event.pointerId);
+        if(value!==undefined){insert(value);feedback('长按输入 '+value);if(state.shift===1){state.shift=0;render();}}
+        else feedback('已取消长按输入');
+        return;
       }
+      clearGesture(event.pointerId);
+      const dx=(event.clientX-gesture.x)/gesture.unit,dy=(event.clientY-gesture.y)/gesture.unit;
+      const swiped=dy < -12 && Math.abs(dy)>Math.abs(dx);
+      if(swiped && gesture.button.dataset.hint)activate(gesture.button,true);
+      else if(Math.hypot(dx,dy)<=12)activate(gesture.button);
     });
-    document.addEventListener('pointercancel',event=>{
-      const gesture=gestures.get(event.pointerId);if(gesture)gesture.button.classList.remove('is-pressed');gestures.delete(event.pointerId);
-    });
+    const cancelPointer=event=>{const gesture=gestures.get(event.pointerId);if(gesture){suppressClick(gesture.button);clearGesture(event.pointerId);}};
+    document.addEventListener('pointercancel',cancelPointer);
+    document.addEventListener('lostpointercapture',cancelPointer);
+    window.addEventListener('blur',cancelGestures);
+    window.addEventListener('resize',cancelGestures);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelGestures();});
+    dialog.addEventListener('cancel',cancelGestures);
     dialog.addEventListener('click',event=>{if(event.target===dialog){const bounds=dialog.getBoundingClientRect();if(event.clientX<bounds.left || event.clientX>bounds.right || event.clientY<bounds.top || event.clientY>bounds.bottom)dialog.close();}});
-    dialog.addEventListener('close',()=>document.querySelector('.zoom-content').replaceChildren());
+    dialog.addEventListener('close',()=>{cancelGestures();document.querySelector('.zoom-content').replaceChildren();});
     render();
+    if(new URLSearchParams(location.search).get('longpress')==='1')openZoom('flat');
   </script>
 </body>
 </html>
