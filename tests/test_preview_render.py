@@ -20,6 +20,29 @@ from build_skin import layout_rectangles
 
 @unittest.skipUnless(HAS_PILLOW, 'Pillow is optional; install it to test preview pixels')
 class ClassificationHighlightTests(unittest.TestCase):
+    def test_hold_anchor_centers_fit_phone_widths(self):
+        from render_hold_preview import hold_geometry, render_hold
+        from build_skin import length
+        for orientation, widths in (('Portrait', (320, 390, 430)), ('Landscape', (568, 680, 932))):
+            for scheme in ('light', 'dark'):
+                doc = load('pinyin' + orientation, scheme)
+                for width in widths:
+                    rects = dict(layout_rectangles(doc, 'keyboardLayout', width, doc['keyboardHeight']))
+                    for letter in 'qwertyuiopasdfghjklzxcvbnm':
+                        with self.subTest(orientation=orientation, scheme=scheme, width=width, letter=letter):
+                            grid, (px, py, pw, ph), (cw, ch) = hold_geometry(doc, letter, width)
+                            self.assertGreaterEqual(px, 0)
+                            self.assertLessEqual(px + pw, width + .01)
+                            x, y, w, h = rects[letter + 'Button']
+                            bounds = doc[letter + 'Button'].get('bounds', {})
+                            visible = length(bounds.get('width'), w)
+                            if visible is not None:
+                                x += w - visible if bounds.get('alignment') == 'right' else 0
+                                w = visible
+                            self.assertAlmostEqual(px + grid['insets']['left'] + (grid['selected']['col'] + .5) * cw, x + w / 2)
+                image = render_hold('f', scheme, orientation, width=widths[1])
+                self.assertEqual(image.width, widths[1] * SCALE)
+
     def test_selected_categories_have_rounded_corners_and_interior_fill(self):
         for scheme in ('light', 'dark'):
             for orientation, width in (('Portrait', 390), ('Landscape', 680)):

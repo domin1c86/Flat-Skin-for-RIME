@@ -64,7 +64,7 @@ local text(label, extra={}) = Style.text({
       highlightImage: { file: 'punctuation', image: name },
     });
     Style.merge([
-    Preedit.new(), Toolbar.new(phoneControls=true, mainControls=mainControls),
+    Preedit.new(fontSize=fonts.iPhonePreedit), Toolbar.new(phoneControls=true, mainControls=mainControls),
     Theme.shared(metrics.keyInsets.iPhone[if isPortrait then 'portrait' else 'landscape']),
     {
       keyboardHeight: metrics.keyboardHeight.iPhone[if isPortrait then 'portrait' else 'landscape'],

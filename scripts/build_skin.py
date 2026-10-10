@@ -24,7 +24,7 @@ REFERENCE_FIELDS = {
     "capsLockedStateForegroundStyle", "preeditStateForegroundStyle", "hintStyle",
     "swipeUpForegroundStyle", "swipeDownForegroundStyle",
     "hintSymbolsStyle", "hintSymbolsGridStyle", "candidateStyle", "cellStyle",
-    "selectedBackgroundStyle", "styleName", "style", "notification", "dataSource",
+    "selectedBackgroundStyle", "symbolStyles", "styleName", "style", "notification", "dataSource",
 }
 LAYOUT_FIELDS = ("toolbarLayout", "keyboardLayout", "horizontalCandidatesLayout", "verticalCandidatesLayout")
 STYLE_TYPES = {"geometry", "text", "systemImage", "assetImage", "fileImage"}
@@ -102,6 +102,25 @@ def validate_document(doc):
     for name, node in doc.items():
         if not isinstance(node, dict):
             continue
+        if "symbolRows" in node:
+            rows = node["symbolRows"]
+            require(isinstance(rows, list) and rows and all(isinstance(row, list) for row in rows), f"{name}: invalid symbol rows")
+            for row in rows:
+                for ref in row:
+                    if ref is not None and ref != "":
+                        require(isinstance(ref, str) and isinstance(doc.get(ref), dict), f"{name}: missing grid option {ref}")
+                        require("foregroundStyle" in doc[ref] and "action" in doc[ref], f"{name}: incomplete grid option {ref}")
+            for field in ("selected", "anchor"):
+                if field in node:
+                    cell = node[field]
+                    require(isinstance(cell, dict) and type(cell.get("row")) is int and type(cell.get("col")) is int,
+                            f"{name}: invalid {field} cell")
+                    r, c = cell["row"], cell["col"]
+                    require(0 <= r < len(rows) and 0 <= c < len(rows[r]) and bool(rows[r][c]), f"{name}: invalid {field} cell")
+            if "moveStep" in node:
+                step = node["moveStep"]
+                require(isinstance(step, dict) and all(type(step.get(axis)) in (int, float) and step[axis] >= 1 for axis in ("horizontal", "vertical")),
+                        f"{name}: invalid move step")
         if node.get("type") == "classifiedSymbols":
             categories = doc[node["dataSource"]]
             require(isinstance(categories, list) and categories, f"{name}: missing categories")

@@ -1,6 +1,7 @@
 // 字号表。所有字号以 point 为单位，跨设备通用。
 {
   preedit: 17,
+  iPhonePreedit: 12,
 
   toolbarText: 16,
   toolbarImage: 20,

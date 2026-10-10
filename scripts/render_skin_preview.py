@@ -96,7 +96,7 @@ def icon(draw, name, center, size, color):
             line([(8, 10), (8, 6), (10, 3), (14, 3), (16, 6), (16, 10)])
 
 
-def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False):
+def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False, preedit=''):
     doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
     if 'symbolCategoryData' in doc and category not in doc['symbolCategoryData']:
         raise ValueError(f'Unknown symbol category: {category}')
@@ -185,6 +185,11 @@ def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False
         left, top, w, h = inset((0, offset, width, height), doc[region_style].get('insets', {}))
         for cell, (x, y, rw, rh) in layout_rectangles(doc, field, w, h):
             paint_cell(doc[cell], (left + x, top + y, rw, rh))
+    if preedit:
+        node = doc[selected(doc['preeditStyle']['foregroundStyle'], ascii_mode)[-1]]
+        x = doc['preeditStyle'].get('insets', {}).get('left', 0)
+        draw.text((x * SCALE, doc['preeditHeight'] / 2 * SCALE), preedit,
+                  font=font(node['fontSize'], preedit), fill=node.get('normalColor', '#000000'), anchor='lm')
     return image
 
 
@@ -204,7 +209,7 @@ def main():
         for column, (name, label) in enumerate((('pinyinPortrait', '主界面'), ('numericPortrait', '数字'), ('symbolicPortrait', '符号'))):
             x, y = margin + column * (board_width + gap), margin + title_height + row * (board_height + 36)
             draw.text((x * SCALE, y * SCALE), label + (' / 浅色' if row == 0 else ' / 深色'), font=font(13, label), fill='#747974')
-            image.paste(render_keyboard(name, scheme, category=args.category), (x * SCALE, (y + 26) * SCALE))
+            image.paste(render_keyboard(name, scheme, category=args.category, preedit='jian dan de' if name == 'pinyinPortrait' else ''), (x * SCALE, (y + 26) * SCALE))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     image.save(args.output, optimize=True)
     print(f'Rendered configuration diagram: {args.output}')

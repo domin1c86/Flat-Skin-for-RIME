@@ -50,6 +50,26 @@ class ValidatorRegressionTests(unittest.TestCase):
                 with self.assertRaisesRegex(SkinError, 'missing reference missingCallout'):
                     validate_document(doc)
 
+    def test_invalid_hold_grid_fails(self):
+        for kind in ('reference', 'selection', 'step'):
+            with self.subTest(kind=kind):
+                doc = load('pinyinPortrait')
+                grid = doc[doc['qButton']['hintSymbolsGridStyle']]
+                if kind == 'reference':
+                    grid['symbolRows'][0][0] = 'missingHoldOption'
+                elif kind == 'selection':
+                    grid['selected']['col'] = 3
+                else:
+                    grid['moveStep']['horizontal'] = 0
+                with self.assertRaises(SkinError):
+                    validate_document(doc)
+
+    def test_missing_hold_list_reference_fails(self):
+        doc = load('pinyinPortrait')
+        doc[doc['qButton']['hintSymbolsStyle']]['symbolStyles'][0] = 'missingHoldOption'
+        with self.assertRaisesRegex(SkinError, 'missing reference missingHoldOption'):
+            validate_document(doc)
+
     def test_mixed_layout_fails(self):
         self.doc['keyboardLayout'].append({'Cell': 'qButton'})
         with self.assertRaisesRegex(SkinError, 'mixed/unknown'):
@@ -88,6 +108,61 @@ class ValidatorRegressionTests(unittest.TestCase):
 
 
 class GeneratedSkinTests(unittest.TestCase):
+    def test_phone_preedit_is_smaller_than_candidates(self):
+        for scheme in ('light', 'dark'):
+            for name in ('pinyin', 'numeric', 'symbolic'):
+                for orientation in ('Portrait', 'Landscape'):
+                    doc = load(name + orientation, scheme)
+                    self.assertEqual(doc['preeditForegroundStyle']['fontSize'], 12)
+                    self.assertEqual(doc['horizontalCandidateStyle']['textFontSize'], 16)
+                    self.assertEqual(doc['preeditHeight'], 25)
+            for name in ('iPadPinyin', 'iPadNumeric'):
+                for orientation in ('Portrait', 'Landscape'):
+                    doc = load(name + orientation, scheme)
+                    self.assertEqual(doc['preeditForegroundStyle']['fontSize'], 17)
+
+    def test_hold_options_order_default_and_literal_actions(self):
+        letters = 'qwertyuiopasdfghjklzxcvbnm'
+        hints = '1234567890~!@#%“”*?()-_:;`'
+        for scheme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('pinyin' + orientation, scheme)
+                left = 'qwa' if orientation == 'Portrait' else 'q'
+                right = 'pol' if orientation == 'Portrait' else 'p'
+                for letter, hint in zip(letters, hints):
+                    with self.subTest(scheme=scheme, orientation=orientation, letter=letter):
+                        node = doc[letter + 'Button']
+                        grid = doc[node['hintSymbolsGridStyle']]
+                        refs = grid['symbolRows'][0]
+                        values = [doc[doc[ref]['foregroundStyle']]['text'] for ref in refs]
+                        expected = [hint, letter.upper(), letter] if letter in left else (
+                            [letter, letter.upper(), hint] if letter in right else [letter.upper(), hint, letter])
+                        self.assertEqual(values, expected)
+                        self.assertEqual(grid['selected'], grid['anchor'])
+                        self.assertEqual(values[grid['selected']['col']], hint)
+                        self.assertEqual(grid['moveStep'], {'horizontal': 24, 'vertical': 44})
+                        self.assertEqual(grid['moveThreshold'], 10)
+                        self.assertEqual(doc[node['hintSymbolsStyle']]['symbolStyles'], refs)
+                        self.assertEqual(doc[node['hintSymbolsStyle']]['selectedIndex'], grid['selected']['col'])
+                        for ref, value in zip(refs, values):
+                            self.assertEqual(doc[ref]['action'], {'symbol': value})
+                            self.assertEqual(doc[ref]['uppercasedStateAction'], {'symbol': value})
+                        for notification in node.get('notification', []):
+                            self.assertEqual(doc[notification]['hintSymbolsGridStyle'], node['hintSymbolsGridStyle'])
+                background = doc['phoneHoldBackground']
+                self.assertEqual(background['cornerRadius'], doc['alphabeticButtonBackgroundStyle']['cornerRadius'])
+                self.assertNotIn('normalBorderColor', background)
+                self.assertGreater(background['shadowOpacity'], 0)
+                self.assertGreater(background['shadowRadius'], 0)
+
+    def test_hold_feature_does_not_change_ipad_or_other_pages(self):
+        for scheme in ('light', 'dark'):
+            for name in ('numericPortrait', 'numericLandscape', 'symbolicPortrait', 'symbolicLandscape',
+                         'iPadPinyinPortrait', 'iPadPinyinLandscape', 'iPadNumericPortrait', 'iPadNumericLandscape'):
+                doc = load(name, scheme)
+                self.assertNotIn('phoneHoldBackground', doc)
+                self.assertFalse(any(isinstance(node, dict) and 'hintSymbolsGridStyle' in node for node in doc.values()))
+
     def test_all_device_mappings_and_split_layouts(self):
         self.assertEqual(validate_skin(), 20)
 
@@ -108,9 +183,11 @@ class GeneratedSkinTests(unittest.TestCase):
                             'keyboardBackgroundStyle', 'alphabeticButtonBackgroundStyle', 'systemButtonBackgroundStyle'
                         ))
                         self.assertEqual(actual, palette if name != 'symbolic' else palette[:3])
-                        for node in doc.values():
+                        for style_name, node in doc.items():
                             if isinstance(node, dict) and node.get('buttonStyleType') == 'geometry':
-                                self.assertFalse({'normalLowerEdgeColor', 'highlightLowerEdgeColor', 'shadowRadius'} & node.keys())
+                                self.assertFalse({'normalLowerEdgeColor', 'highlightLowerEdgeColor'} & node.keys())
+                                if style_name != 'phoneHoldBackground':
+                                    self.assertNotIn('shadowRadius', node)
 
     def test_twenty_six_hints_survive_uppercase(self):
         letters = 'qwertyuiopasdfghjklzxcvbnm'

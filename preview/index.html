@@ -45,7 +45,7 @@
     .editor textarea { display:block; border:0; padding:0; width:100%; height:48px; resize:none; font-size:17px; line-height:1.5; background:transparent; color:var(--foreground); }
     .editor textarea::placeholder { color:var(--secondary); opacity:.7; font-size:14px; }
     .keyboard { --u:calc(100cqw / var(--canvas-width)); background:var(--board); position:relative; }
-    .preedit { height:calc(25 * var(--u)); display:flex; align-items:center; padding:0 calc(8 * var(--u)); color:var(--secondary); font-size:calc(11 * var(--u)); }
+    .preedit { height:calc(25 * var(--u)); display:flex; align-items:center; padding:0 calc(8 * var(--u)); color:var(--secondary); font-size:calc(12 * var(--u)); }
     .toolbar { height:calc(40 * var(--u)); display:flex; align-items:center; gap:calc(3 * var(--u)); padding:0 calc(9 * var(--u)); }
     .toolbar button { width:calc(38 * var(--u)); height:calc(34 * var(--u)); border:0; border-radius:calc(6 * var(--u)); background:transparent; color:var(--secondary); display:grid; place-items:center; }
     .toolbar button:hover { background:var(--system); }
@@ -161,7 +161,7 @@
       <button type="button" data-zoom="flat">体验扁平灰白 · 长按任意字母</button>
     </section>
     <section class="comparison" aria-label="三种皮肤对照"></section>
-    <footer class="help"><p>点击试输入 · 上划输入上标 · 长按左右滑选 · 松手确认</p><p>仅网页预览，未修改实际皮肤；长按时间与手势仍需元书实机验证。</p></footer>
+    <footer class="help"><p>点击试输入 · 上划输入上标 · 长按左右滑选 · 松手确认</p><p>原生皮肤已配套实现；网页 300ms 延迟与原生边缘适配有所不同，最终以元书实机为准。</p></footer>
   </main>
   <dialog class="zoom-dialog" aria-labelledby="zoom-title"><div class="zoom-header"><h2 id="zoom-title"></h2><button class="dialog-close" type="button">关闭</button></div><div class="zoom-settings"><div class="segments" role="group" aria-label="放大预览颜色"><button type="button" data-setting="mode" data-value="light">浅色</button><button type="button" data-setting="mode" data-value="dark">深色</button></div><div class="segments" role="group" aria-label="放大预览方向"><button type="button" data-setting="orientation" data-value="portrait">竖屏</button><button type="button" data-setting="orientation" data-value="landscape">横屏</button></div><button type="button" data-action="language" class="zoom-language">中英切换</button><button type="button" data-action="shift" class="zoom-shift">Shift</button></div><div class="zoom-content"></div><p class="zoom-help">按住字母 300ms → 左右滑选 → 松手输入<br>中文状态也直接输入选中字母；此处不接入 RIME。</p></dialog>
   <script>

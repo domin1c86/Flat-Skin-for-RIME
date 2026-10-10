@@ -6,6 +6,7 @@ local metrics = import '../Constants/Metrics.libsonnet';
 local Button = import '../Components/Button.libsonnet';
 local Layout = import '../Components/Layout.libsonnet';
 local Phone = import '../Components/iPhone.libsonnet';
+local Hold = import '../Components/iPhoneHold.libsonnet';
 local Style = import '../Components/Style.libsonnet';
 local Theme = import '../Components/Theme.libsonnet';
 local Widths = import '../Components/Widths.libsonnet';
@@ -34,16 +35,18 @@ local names(row) = [name(c) for c in std.stringChars(row)];
               foregroundNormalColor: colors.swipeHintColor, foregroundHighlightColor: colors.swipeHintColor } },
           { name: bottomName, params: { text: c, fontSize: fonts.keyLabel, center: { y: 0.59 } } },
         ],
-      }, insets, { size: metrics.hint.iPhoneSize }) + {
+      }, insets, { size: metrics.hint.iPhoneSize }) + Hold.new(c, Phone.letterHints[c], isPortrait) + {
         [n]+: {
           foregroundStyle: normalForeground,
           uppercasedStateForegroundStyle: chineseForeground,
           notification: [n + 'ChineseLabelNotification'],
+          hintSymbolsGridStyle: n + 'HoldGridStyle', hintSymbolsStyle: n + 'HoldListStyle',
         },
         [n + 'ChineseLabelNotification']: {
           notificationType: 'rime', rimeNotificationType: 'optionChanged',
           rimeOptionName: 'ascii_mode', rimeOptionValue: false,
           backgroundStyle: Theme.alphabeticBackgroundName, foregroundStyle: chineseForeground,
+          hintSymbolsGridStyle: n + 'HoldGridStyle', hintSymbolsStyle: n + 'HoldListStyle',
         },
         [upperName]+: { center: { y: 0.59 } },
         // 上划气泡需要独立前景，否则会继续显示普通按键的字母。
@@ -55,6 +58,7 @@ local names(row) = [name(c) for c in std.stringChars(row)];
       };
     Style.merge([
       Phone.base(isPortrait, mainControls=true),
+      Hold.shared,
       { keyboardLayout: [
         Layout.row(names('qwertyuiop')),
         Layout.row(names('asdfghjkl')),

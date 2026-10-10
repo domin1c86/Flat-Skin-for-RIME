@@ -8,7 +8,7 @@ local foregroundName = 'preeditForegroundStyle';
 
 {
   // insets 不给就贴着左上角；iPad 上传一份两侧留白的，见 Metrics.iPadSideInsets。
-  new(insets=metrics.preedit.insets):: {
+  new(insets=metrics.preedit.insets, fontSize=metrics.preedit.fontSize):: {
     preeditHeight: metrics.preedit.height,
     preeditStyle: {
       insets: insets,
@@ -17,7 +17,7 @@ local foregroundName = 'preeditForegroundStyle';
     },
     [foregroundName]: Style.text({
       normalColor: colors.preeditForegroundColor,
-      fontSize: metrics.preedit.fontSize,
+      fontSize: fontSize,
     }),
   },
 }
