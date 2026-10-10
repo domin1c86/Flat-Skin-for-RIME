@@ -15,6 +15,7 @@ import zipfile
 
 from build_skin import ROOT, SKIN, validate_skin
 from render_skin_preview import effective_button, selected, button_foreground
+from rime_skin_actions import semantic_action, semantic_document
 
 # Independent, explicit Unicode oracle from the approved requirements, rather
 # than using LetterSymbols.json as both the implementation and the expectation.
@@ -39,6 +40,7 @@ def texts(doc, refs, english):
 
 
 def inspect_letter(doc, letter, english, notified=False, shift=False, caps=False, option_english=None):
+    doc = semantic_document(doc)
     option_english = english if option_english is None else option_english
     base = doc[letter + 'Button']
     node = effective_button(doc, base, option_english, notified)
@@ -88,7 +90,7 @@ def inspect_punctuation(doc, english, notified=False):
                          ('chinesePeriodButton', ('\u3002', '.'))]:
         node = effective_button(doc, doc[name], english, notified)
         expected = {'symbol': values[int(english)]}
-        if node.get('action') != expected:
+        if semantic_action(node.get('action')) != expected:
             failures[name] = {'actual': node.get('action'), 'expected': expected}
     return failures
 
@@ -142,22 +144,22 @@ def inspect_routes(config, routes):
                 name=config[kind]['iPhone'][orientation]
                 doc=json.loads((SKIN/theme/(name+'.yaml')).read_text(encoding='utf-8'))
                 expected={'combine':[{'keyboardType':'alphabetic' if kind=='pinyin' else 'pinyin'}, {'sendKeys':routes['toggleKeys']}]}
-                if doc['asciiModeButton']['action'] != expected:
+                if semantic_action(doc['asciiModeButton']['action']) != expected:
                     failures.append(f'{theme}/{name}: language route')
-                if doc['toolbarSchemaButton']['action'] != {'keyboardType':'skinSchemes'}:
+                if semantic_action(doc['toolbarSchemaButton']['action']) != {'keyboardType':'skinSchemes'}:
                     failures.append(f'{theme}/{name}: scheme panel route')
             name=config['skinSchemes']['iPhone'][orientation]
             doc=json.loads((SKIN/theme/(name+'.yaml')).read_text(encoding='utf-8'))
             for item in routes['schemes']:
                 expected={'combine':[{'keyboardType':'alphabetic' if item['language']=='en' else 'pinyin'}, {'switchRimeSchema':item['id']}]}
-                if doc['scheme'+item['id']]['action'] != expected:
+                if semantic_action(doc['scheme'+item['id']]['action']) != expected:
                     failures.append(f'{theme}/{name}: {item["id"]}')
-            if doc['schemeBack']['action'] != 'returnLastKeyboard':
+            if semantic_action(doc['schemeBack']['action']) != 'returnLastKeyboard':
                 failures.append(f'{theme}/{name}: scheme cancel return')
             for kind, button, action in [('numeric','pinyinButton','returnPrimaryKeyboard'),
                                          ('symbolic','symbolReturnButton','returnLastKeyboard')]:
                 doc=json.loads((SKIN/theme/(config[kind]['iPhone'][orientation]+'.yaml')).read_text(encoding='utf-8'))
-                if doc[button]['action'] != action:
+                if semantic_action(doc[button]['action']) != action:
                     failures.append(f'{theme}/{kind}: return action')
     return failures
 

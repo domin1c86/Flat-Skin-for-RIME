@@ -3,6 +3,7 @@
 # @0 已核对为这份用户文件中的 ascii_mode；升级后先核对开关顺序。
 patch:
   "engine/processors/@before 0": lua_processor@*skin_scheme_memory
+  "engine/processors/@before 1": lua_processor@*skin_context_processor
   # 初始化由配套 Lua 恢复记忆，不能随后固定重置成 ASCII-OFF。
   "switches/@0/reset": -1
   "translator/enable_completion": true

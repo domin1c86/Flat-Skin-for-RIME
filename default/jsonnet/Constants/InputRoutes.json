@@ -3,6 +3,8 @@
   "english": "melt_eng",
   "toggleKeys": "Control+Shift+F12",
   "candidateToggleKeys": "Control+Shift+F11",
+  "contextCancelKeys": "Control+Shift+F9",
+  "contextResetKeys": "Control+Shift+F10",
   "schemes": [
     { "id": "double_pinyin_flypy", "label": "小鹤双拼－薄荷定制", "language": "zh" },
     { "id": "rime_mint", "label": "薄荷拼音－全拼输入", "language": "zh" },

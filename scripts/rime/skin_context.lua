@@ -125,6 +125,7 @@ function M.processor.init(env)
   st.limit = math.max(1,math.min(st.limit,5))
   env.db_key = rime_api.get_user_data_dir()
   local ok, db = pcall(function()
+    if not chinese[env.engine.schema.schema_id] then return nil end
     local shared = databases[env.db_key]
     if shared then shared.users=shared.users+1; return shared.db end
     local result = LevelDb("skin_context")

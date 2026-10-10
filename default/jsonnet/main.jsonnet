@@ -2,6 +2,7 @@
 //
 // PC 编译：python scripts/build_skin.py；手机端长按皮肤选择「运行 main.jsonnet」。
 local Style = import 'Components/Style.libsonnet';
+local ContextActions = import 'Components/ContextActions.libsonnet';
 local iPadNumeric = import 'Keyboards/iPadNumeric.libsonnet';
 local iPadPinyin = import 'Keyboards/iPadPinyin.libsonnet';
 local iPhoneNumeric = import 'Keyboards/iPhoneNumeric.libsonnet';
@@ -78,7 +79,7 @@ local config = {
 + {
   // JSON 是 YAML 的子集，这里用 std.toString 而不是 std.manifestYamlDoc：
   // 后者在这个体量下慢到影响手机上的实时编译，产物对引擎完全等价。
-  [scheme + '/' + name + '.yaml']: std.toString(Style.prune(Style.resolve(keyboards[name], scheme == 'dark')))
+  [scheme + '/' + name + '.yaml']: std.toString(Style.prune(Style.resolve(ContextActions.apply(keyboards[name]), scheme == 'dark')))
   for name in std.objectFields(keyboards)
   for scheme in ['light', 'dark']
 }

@@ -7,10 +7,11 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from build_skin import SkinError, layout_rectangles, validate_document, validate_image_resources, validate_skin
+from rime_skin_actions import semantic_document
 
 
 def load(name, scheme='light'):
-    return json.loads((ROOT / 'default' / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
+    return semantic_document(json.loads((ROOT / 'default' / scheme / (name + '.yaml')).read_text(encoding='utf-8')))
 
 
 def selected_styles(value, conditions):

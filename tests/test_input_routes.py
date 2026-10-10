@@ -8,10 +8,11 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from build_skin import validate_action, SkinError
 from audit_letter_symbols import inspect_routes
+from rime_skin_actions import semantic_document
 
 
 def load(name,theme='light'):
-    return json.loads((ROOT/'default'/theme/(name+'.yaml')).read_text(encoding='utf-8'))
+    return semantic_document(json.loads((ROOT/'default'/theme/(name+'.yaml')).read_text(encoding='utf-8')))
 
 
 class InputRouteTests(unittest.TestCase):

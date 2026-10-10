@@ -137,6 +137,7 @@ def check(folder):
     require([item['schema'] for item in selection] == ids, 'enabled list does not match skin picker')
     common = {
         'engine/processors/@before 0': 'lua_processor@*skin_scheme_memory',
+        'engine/processors/@before 1': 'lua_processor@*skin_context_processor',
         'ascii_composer/good_old_caps_lock': False,
         'ascii_composer/switch_key': {key: 'noop' for key in
             ('Caps_Lock', 'Shift_L', 'Shift_R', 'Control_L', 'Control_R')},
