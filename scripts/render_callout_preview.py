@@ -16,7 +16,7 @@ def callout_foreground(doc, letter, english=False, shift=False, caps=False, swip
 
 def render_callout(letter, scheme, english=False, shift=False, caps=False, swipe=False,
                    orientation='Portrait', width=390):
-    name = 'pinyin' + orientation
+    name = ('alphabetic' if english else 'pinyin') + orientation
     doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
     image = render_keyboard(name, scheme, width, ascii_mode=english, shift=shift, caps_locked=caps,
                             after_language_change=True)

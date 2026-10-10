@@ -128,6 +128,9 @@ def icon(draw, name, center, size, color):
 
 def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False, preedit='',
                     shift=False, caps_locked=False, after_language_change=False):
+    # Language now chooses a complete keyboard file, not a notification overlay.
+    if name.startswith('pinyin') and ascii_mode:
+        name = name.replace('pinyin', 'alphabetic', 1)
     doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
     if 'symbolCategoryData' in doc and category not in doc['symbolCategoryData']:
         raise ValueError(f'Unknown symbol category: {category}')

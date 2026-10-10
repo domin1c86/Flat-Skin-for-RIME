@@ -1,7 +1,7 @@
 """Audit compiled symbol routes independently of the shared catalog.
 
 Initial nodes and option-notification replacements are deliberately separate.
-This checks configuration, not delivery of native iOS notification events.
+Each language selects its own complete file. This checks configuration only.
 Exit 1 when unresolved mismatches remain; always write the requested report.
 """
 import argparse
@@ -96,178 +96,166 @@ def inspect_punctuation(doc, english, notified=False):
 def audit_documents(documents):
     rows, punctuation, cycles, english_schema = [], [], [], []
     for filename, doc in documents.items():
+        english = '/alphabetic' in filename
         for notified in (False, True):
-            for english in (False, True):
+            for option in (False, True):
                 for case, shift, caps in CASE_STATES:
                     for letter in EXPECTED:
                         rows.append(dict(file=filename, letter=letter, english=english, notified=notified,
-                                         case=case, failures=inspect_letter(doc, letter, english, notified, shift, caps)))
-                    punctuation.append(dict(file=filename, english=english, notified=notified, case=case,
-                                            failures=inspect_punctuation(doc, english, notified)))
-        # Model complete notification replacements in both transition directions.
-        # This does not claim to simulate the native event dispatcher or its order.
-        for sequence in ((False, True, False), (True, False, True)):
-            for step, english in enumerate(sequence):
-                for case, shift, caps in CASE_STATES:
-                    for letter in EXPECTED:
-                        cycles.append(dict(file=filename, sequence=sequence, step=step, letter=letter,
-                                           case=case, failures=inspect_letter(doc, letter, english, True, shift, caps)))
-        # Public melt_eng default: English schema with ASCII-OFF. There is
-        # currently no schemaChanged override; model its option state separately
-        # from the expected English language. Do not claim a native event test.
-        for case, shift, caps in CASE_STATES:
-            for letter in EXPECTED:
-                english_schema.append(dict(file=filename, letter=letter, case=case,
-                    failures=inspect_letter(doc, letter, True, True, shift, caps, option_english=False)))
+                            option=option, case=case, failures=inspect_letter(doc, letter, english, notified, shift, caps, option)))
+                    punctuation.append(dict(file=filename, english=english, notified=notified, option=option,
+                        case=case, failures=inspect_punctuation(doc, english, notified)))
+        if english:
+            for case, shift, caps in CASE_STATES:
+                for letter in EXPECTED:
+                    english_schema.append(dict(file=filename, letter=letter, case=case,
+                        failures=inspect_letter(doc, letter, True, False, shift, caps, option_english=False)))
+    # Explicit primary-file transitions. This does not simulate the iOS dispatcher.
+    for theme in ('light', 'dark'):
+        for orientation in ('Portrait', 'Landscape'):
+            names = [f'{theme}/{kind}{orientation}.yaml' for kind in ('pinyin', 'alphabetic')]
+            if not all(name in documents for name in names):
+                continue
+            for sequence in ((False, True, False), (True, False, True)):
+                for step, english in enumerate(sequence):
+                    doc = documents[names[int(english)]]
+                    for case, shift, caps in CASE_STATES:
+                        for letter in EXPECTED:
+                            cycles.append(dict(sequence=sequence, step=step, case=case, letter=letter,
+                                failures=inspect_letter(doc, letter, english, False, shift, caps, option_english=False)))
     return dict(letters=rows, punctuation=punctuation, cycles=cycles, english_schema=english_schema)
 
 
 def code(value):
-    # HTML entities keep backticks and quotes readable inside Markdown tables.
-    return '<code>' + value.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;') + '</code>'
+    return '<code>' + value.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;') + '</code>'
 
 
 def unicode_label(value):
     return code(value) + ' ' + ' '.join(f'U+{ord(char):04X}' for char in value)
 
 
+def inspect_routes(config, routes):
+    failures = []
+    for theme in ('light', 'dark'):
+        for orientation in ('portrait', 'landscape'):
+            for kind in ('pinyin', 'alphabetic'):
+                name=config[kind]['iPhone'][orientation]
+                doc=json.loads((SKIN/theme/(name+'.yaml')).read_text(encoding='utf-8'))
+                target=routes['english'] if kind=='pinyin' else routes['defaultChinese']
+                expected={'combine':[{'keyboardType':'alphabetic' if kind=='pinyin' else 'pinyin'}, {'switchRimeSchema':target}]}
+                if doc['asciiModeButton']['action'] != expected:
+                    failures.append(f'{theme}/{name}: language route')
+                if doc['toolbarSchemaButton']['action'] != {'keyboardType':'skinSchemes'}:
+                    failures.append(f'{theme}/{name}: scheme panel route')
+            name=config['skinSchemes']['iPhone'][orientation]
+            doc=json.loads((SKIN/theme/(name+'.yaml')).read_text(encoding='utf-8'))
+            for item in routes['schemes']:
+                expected={'combine':[{'keyboardType':'alphabetic' if item['language']=='en' else 'pinyin'}, {'switchRimeSchema':item['id']}]}
+                if doc['scheme'+item['id']]['action'] != expected:
+                    failures.append(f'{theme}/{name}: {item["id"]}')
+            if doc['schemeBack']['action'] != 'returnLastKeyboard':
+                failures.append(f'{theme}/{name}: scheme cancel return')
+            for kind, button, action in [('numeric','pinyinButton','returnPrimaryKeyboard'),
+                                         ('symbolic','symbolReturnButton','returnLastKeyboard')]:
+                doc=json.loads((SKIN/theme/(config[kind]['iPhone'][orientation]+'.yaml')).read_text(encoding='utf-8'))
+                if doc[button]['action'] != action:
+                    failures.append(f'{theme}/{kind}: return action')
+    return failures
+
+
 def write_report(result, documents, output):
-    initial = [row for row in result['letters'] if not row['notified']]
-    notified = [row for row in result['letters'] if row['notified']]
-    failed = [row for row in initial if row['failures']]
-    affected = ''.join(letter.upper() for letter in EXPECTED
-                       if any(row['letter'] == letter for row in failed))
-    catalog = json.loads((SKIN / 'jsonnet/Constants/LetterSymbols.json').read_text(encoding='utf-8'))
-    oracle = {'letters': ''.join(EXPECTED), 'chinese': ''.join(v[0] for v in EXPECTED.values()),
-              'english': ''.join(v[1] for v in EXPECTED.values())}
-    html = (ROOT / 'preview/index.html').read_text(encoding='utf-8')
-    embedded = json.loads(re.search(r'const letterSymbols = (.*);', html).group(1))
-    archive = ROOT / 'dist/扁平灰白.cskin'
-    package_ok = False
-    entry_count = 0
+    config=json.loads((SKIN/'config.yaml').read_text(encoding='utf-8'))
+    routes=json.loads((SKIN/'jsonnet/Constants/InputRoutes.json').read_text(encoding='utf-8'))
+    route_failures=inspect_routes(config, routes)
+    catalog=json.loads((SKIN/'jsonnet/Constants/LetterSymbols.json').read_text(encoding='utf-8'))
+    oracle={'letters':''.join(EXPECTED), 'chinese':''.join(v[0] for v in EXPECTED.values()),
+            'english':''.join(v[1] for v in EXPECTED.values())}
+    html=(ROOT/'preview/index.html').read_text(encoding='utf-8')
+    embedded=json.loads(re.search(r'const letterSymbols = (.*);',html).group(1))
+    embedded_routes=json.loads(re.search(r'const inputRoutes = (.*);',html).group(1))
+    archive=ROOT/'dist/扁平灰白.cskin'
+    package_ok=False
+    count=0
     if archive.exists():
         with zipfile.ZipFile(archive) as z:
-            entry_count = len(z.namelist())
-            files = {path.relative_to(SKIN).as_posix(): path.read_bytes()
-                     for path in SKIN.rglob('*') if path.is_file()}
-            package_ok = z.testzip() is None and set(z.namelist()) == {'扁平灰白/' + name for name in files}
-            package_ok = package_ok and all(z.read('扁平灰白/' + name) == data for name, data in files.items())
-    stats = Counter(name for row in failed for name in row['failures'])
-    stamp = datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M UTC+8')
-    lines = [
-        '# 中英文符号逐键核对报告', '', f'核对时间：{stamp}。对象：当前工作区与现有 `.cskin`；本轮未修改原生键盘配置。', '',
-        '## 结论', '',
-        '**当前不能判定“全部无误”。字符映射本身符合已确认表格，但初始英文动作与显示存在配置不一致，另有独立英文方案的状态识别缺口。**', '',
-        f'- 26 键在语言通知已生效后的上标、上滑显示与动作、长按显示与动作：{len(notified)} 组中 {sum(not row["failures"] for row in notified)} 组通过。',
-        f'- 初始节点：{len(initial)} 组中 {len(failed)} 组存在不一致，集中在英文的 {len(affected)} 键（{affected}）。',
-        '- 所有通过项仅表示配置值一致；没有用 iPhone 实测通知是否在首次打开、方案切换时正确生效。',
-        '- 本报告将缺陷与实机待验项目分开，不把网页输入结果当成元书实际输入结果。', '',
+            count=len(z.namelist())
+            files={path.relative_to(SKIN).as_posix():path.read_bytes() for path in SKIN.rglob('*') if path.is_file()}
+            package_ok=z.testzip() is None and set(z.namelist())=={'扁平灰白/'+name for name in files}
+            package_ok=package_ok and all(z.read('扁平灰白/'+name)==data for name,data in files.items())
+    mismatches=sum(bool(row['failures']) for group in result.values() for row in group)
+    ok=not mismatches and not route_failures and catalog==embedded==oracle and routes==embedded_routes and package_ok
+    stamp=datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M UTC+8')
+    lines=['# 中英文符号逐键核对报告', '', f'核对时间：{stamp}。', '',
+        '## 当前结果', '',
+        f'**配置审计：{"通过" if ok else "未通过"}；iOS 实机验收：待验证。**', '',
+        '已拆分 pinyin 中文主键盘与 alphabetic 英文主键盘。每份文件在首次加载时就包含对应语言的上标、上滑动作、普通气泡、长按网格及回退列表，字母与标点不再依赖 ascii_mode 通知来更新。', '',
+        '中英按钮同步选择布局与方案：中文→alphabetic + melt_eng；英文→pinyin + double_pinyin_flypy。英文方案的 ASCII-OFF 状态不会把英文符号改成中文。英文回到中文固定选择当前约定的小鹤双拼，不自动记忆其他中文方案。', '',
         '## 逐键结果', '',
-        '表中“通知后”检查中文及英文两种状态、浅色/深色、竖屏/横屏、普通/Shift/大写锁定。'
-        '“初始英文”表示直接读取基础按键、尚未收到语言通知的路径，不表示已在 iPhone 复现。', '',
-        '| 按键 | 中文目标及码点 | 英文目标及码点 | 通知后显示与动作 | 初始中文 | 初始英文 |',
-        '| --- | --- | --- | --- | --- | --- |',
-    ]
-    for letter, (zh, en) in EXPECTED.items():
-        bad = any(row['letter'] == letter and row['english'] and row['failures'] for row in initial)
-        passed = all(not row['failures'] for row in notified if row['letter'] == letter)
-        cn_ok = all(not row['failures'] for row in initial if row['letter'] == letter and not row['english'])
+        '| 按键 | 中文目标及码点 | 英文目标及码点 | 初始上标/上滑气泡 | 上滑动作 | 长按网格/回退 |',
+        '| --- | --- | --- | --- | --- | --- |']
+    for letter,(zh,en) in EXPECTED.items():
+        rows=[row for row in result['letters'] if row['letter']==letter]
+        def status(names):
+            return '通过' if all(not any(name in row['failures'] for name in names) for row in rows) else '失败'
         lines.append(f'| {letter.upper()} | {unicode_label(zh)} | {unicode_label(en)} | '
-                     f'{"通过" if passed else "失败"} | {"通过" if cn_ok else "失败"} | '
-                     f'{"不一致：动作/长按仍为中文" if bad else "通过（数字相同）"} |')
-    lines += [
-        '', '数字 1–0 按此前约定均保持半角；H/J 中文分别为左右弯引号，英文两键均为 ASCII 直双引号；'
-        'V 中文为全角低线 U+FF3F，M 中文为全角反引号 U+FF40。全角并不意味着所有中文符号都位于 FFxx 区段。', '',
-        '## 发现的问题', '',
-        '### 1. 初始英文显示正确，动作和长按仍指向中文', '',
-        '`iPhonePinyin.libsonnet` 的基础 `swipeUpAction`、`hintSymbolsGridStyle`、`hintSymbolsStyle` 固定为中文。'
-        '与此同时，上标及上滑气泡使用 `rime$ascii_mode` 条件显示英文。只有英文语言通知节点将动作和长按引用替换成英文。', '',
-        '例如初始 `ascii_mode=true`、F 键：键面和上滑气泡显示 `#`（U+0023），基础上滑动作却是 `＃`（U+FF03），'
-        '基础长按默认项也为 `＃`。通知生效后这四处才全部变为 `#`。', '',
-        '这是可直接从编译配置证明的未通知路径缺口；不能据此断言元书每次启动都漏发通知。'
-        '官方说明通知用于 option 变更，但没有在引用页面承诺启动一定回放当前 option。', '',
-        '| 初始英文不一致项 | 失败检查次数 |', '| --- | --- |',
-    ]
-    lines += [f'| {name} | {count} |' for name, count in stats.items()]
-    lines += [
-        '', '### 2. 底行逗号、句号存在相同依赖', '',
-        '初始英文键面显示 `,` / `.`，基础动作仍为 `，` / `。`；英文通知生效后变为半角。'
-        '当前两键的中文动作依靠英文通知不匹配时恢复基础节点，并无单独中文通知。', '',
-        f'标点动作审计共 {len(result["punctuation"])} 组，两键共 '
-        f'{sum(len(row["failures"]) for row in result["punctuation"])} 项不一致，全部属于初始英文路径。', '',
-        '### 3. 独立英文方案与 ascii_mode 不是同一个概念', '',
-        '本皮肤仅依据 `ascii_mode` 判断符号语言。薄荷 `melt_eng`（Easy English Nano）默认 `ascii_mode=0`，'
-        '并需关闭 ASCII 直通才能获得英文单词候选。在这种英文方案状态下，本皮肤仍选择中文全角符号、中文图标及大写键面。', '',
-        '当前配置没有 `schemaChanged` 的英文方案覆盖，也没有 `alphabetic` 键盘映射。'
-        '因此启用独立英文方案不会自动获得本皮肤的英文符号状态；单靠补一份字符映射无法解决。'
-        '尚未读取你手机中是否定制了该方案，以上针对公开默认方案及本地皮肤。', '',
-        f'另将“目标语言英文、实际 ascii_mode=false”分离建模：{len(result["english_schema"])} 组中 '
-        f'{sum(bool(row["failures"]) for row in result["english_schema"])} 组不符合英文目标；'
-        '数字本身相同，但英文普通小写气泡也会受到中文大写状态影响。这是配置状态建模，不是实机方案切换测试。', '',
-        '### 4. 之前测试和 HTML 为何没有暴露问题', '',
-        '旧测试同时检查初始/通知后的气泡显示，却只对通知节点检查实际上滑、长按动作。'
-        'HTML 在执行输入时直接读取当前语言映射，不经过原生通知机制；网页正确不能证明原生初始化正确。'
-        '本轮新增审计将基础动作、长按网格和旧版列表全部纳入初始英文路径。', '',
-        '## 验证范围与证据', '',
-        '- 字符目标采用逐键、逐 Unicode 码点的独立基准，避免把同一份错误映射同时用作输入和测试答案。',
-        '- 4 份 iPhone 主键盘配置 × 26 键 × 2 语言 × 3 大小写状态 × 2 通知阶段，共 '
-        f'{len(result["letters"])} 组；每组检查 {len(COMPONENTS)} 项。',
-        f'- 中→英→中、英→中→英的通知节点替换核对：{len(result["cycles"])} 组，'
-        f'{sum(bool(row["failures"]) for row in result["cycles"])} 组不一致。此项检查节点定义，不模拟 iOS 事件派发顺序。',
-        f'- 独立基准与 `LetterSymbols.json`：{"一致" if catalog == oracle else "不一致"}；离线 HTML 内嵌映射：'
-        f'{"一致" if embedded == oracle else "不一致"}。',
-        f'- 现有压缩包：{entry_count} 个文件；CRC、文件集合及全部文件内容与源码 '
-        f'{"一致" if package_ok else "不一致或尚未打包"}。',
-        '- 全部 20 份配置完成结构、引用与布局校验；此类校验通过不等于语言动作通过。', '',
-        '- 本轮完整回归：48 项测试通过（包含审计能够识别已知缺口的测试）；'
-        '审计自身仍返回退出码 1，不把“审计工具正确发现问题”记为“皮肤问题已解决”。', '',
-        '| 审计配置 | SHA-256 |', '| --- | --- |',
-    ]
-    lines += [f'| {name} | `{hashlib.sha256((SKIN / name).read_bytes()).hexdigest()}` |' for name in documents]
-    lines += [
-        '', '## 其他符号入口的范围', '',
-        '- 数字页仍按既定设计提供半角运算符、句点和 @；它不是按语言切换的字母键上标，本轮不改。',
-        '- 符号页“常用”刻意混合中英文；“中文”“英文”由用户选择分类，现有 20 项/分类未变化。'
-        '分类与主键盘的语言映射是不同入口，不据此判定全部字符符合主键盘的全角规则。',
-        '- iPad 普通布局仍保留旧动作；iPad 浮动键盘复用 iPhone 竖屏，具有相同的初始状态风险。',
-        '- 长按仍保留大写/小写拉丁字母选项，这是已确认功能；语言限制针对符号项，不删除字母选项。', '',
-        '## 修复状态与验收条件', '',
-        '**本轮交付审计工具与报告，未宣称已修复上述原生缺口，也未重新打包皮肤。**'
-        '不向动作或长按引用写入官方未支持的条件数组，避免再次引入无法解析的配置。', '',
-        '后续修复需同时解决：初始语言下动作/长按引用的选择，以及英文方案处于 `ascii_mode=false` 时的语言判定。'
-        '可以评估独立中/英文键盘文件配合原生键盘类型与方案切换，但须处理返回键、语言按钮、方案保留及初始化，不能只补显示层。', '',
-        '最终需在元书 1.11.0(558) 实机逐键比较复制出的 Unicode：冷启动中文/英文、两种语言往返切换、'
-        '独立英文方案且 ASCII 关闭、普通/Shift/大写锁定、有/无拼音预编辑，分别验证上滑与长按。'
-        '所有已知不一致清零、实机检查通过后，才可标为验收通过。', '',
-        '## 复核命令', '',
-        '```powershell', 'python scripts/build_skin.py --compile-only',
-        'python -m unittest discover -s tests -v', 'python scripts/audit_letter_symbols.py', '```', '',
-        '审计命令发现上述缺口时返回退出码 1，并仍然写出本报告。这是审计发现，不是工具崩溃。', '',
-        '## 依据', '',
-        '- [元书按键动作：symbol 直接发送系统；中英切换操作 ascii_mode](https://ihsiao.com/apps/hamster/v3/docs/guides/skins/action/)',
-        '- [元书配置索引：动作、长按引用、条件样式及通知替换](https://ihsiao.com/apps/hamster/v3/docs/guides/skins/keys-reference/)',
-        '- [元书事件通知：option 变更触发与不匹配恢复](https://ihsiao.com/apps/hamster/v3/docs/guides/skins/notifications/)',
-        '- [薄荷公开 melt_eng 配置：ascii_mode reset 0](https://github.com/Mintimate/oh-my-rime/blob/main/melt_eng.schema.yaml)', '',
-    ]
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text('\n'.join(lines), encoding='utf-8')
-    return catalog == embedded == oracle and package_ok and not any(row['failures'] for group in result.values() for row in group)
+            f'{status(["键面上标","上滑气泡"])} | {status(["上滑动作"])} | '
+            f'{status(["长按符号显示","长按符号动作","长按大写态符号动作","旧版长按列表"])} |')
+    lines += ['', '数字按约定保持半角；中文 H/J 分别为弯引号 “ / ”，英文均为直双引号 U+0022；V 中文为全角低线 U+FF3F，M 中文为全角反引号 U+FF40。长按仍保留大小写拉丁字母选项。', '',
+        '## 自动核对范围', '',
+        f'- 8 份主键盘配置 × 26 键 × 普通/Shift/大写锁定 × 两种 ascii_mode × 初始/通知阶段，共 {len(result["letters"])} 组，每组检查 {len(COMPONENTS)} 项。',
+        f'- 显式中文→英文→中文及反向布局切换：{len(result["cycles"])} 组；英文方案 ASCII-OFF：{len(result["english_schema"])} 组。',
+        f'- 逗号、句号动作：{len(result["punctuation"])} 组。以上共 {mismatches} 组不一致。',
+        f'- 中英按钮、4 个方案选项、数字/符号返回动作检查：{len(route_failures)} 项不一致。',
+        f'- 独立 Unicode 基准、原生映射、HTML 映射：{"一致" if catalog==embedded==oracle else "不一致"}；HTML 方案列表：{"一致" if routes==embedded_routes else "不一致"}。',
+        f'- .cskin 共 {count} 个文件，CRC、文件集合和内容与当前源码：{"一致" if package_ok else "不一致"}。',
+        '- 全部 28 份配置通过结构、引用、动作和布局校验。自动切换测试是配置模型，不是元书事件派发的实测。', '',
+        '## 方案与入口', '', '| 方案 ID | 键盘类型 |', '| --- | --- |']
+    lines += [f'| {item["id"]} | {"alphabetic" if item["language"]=="en" else "pinyin"} |' for item in routes['schemes']]
+    lines += ['', '工具栏方案入口改为皮肤自己的选择面板，选项会同时切换布局与方案；它只列出上述约定方案，不扫描手机已安装方案。元书中需安装并启用这些方案。', '',
+        '数字页继续调用 returnPrimaryKeyboard，符号页继续调用 returnLastKeyboard；网页返回也保留当前语言和方案。英文符号、数字字面值使用 symbol 直接上屏，普通字母继续通过 character 交给方案生成候选。', '',
+        '## 实机待验与支持边界', '',
+        '- **尚未完成最小实机验证。** 此环境无法运行元书 iOS。已生成完整验证包与配置示意，不能将 Windows 配置/网页结果记为实机通过。',
+        '- 先测 Q、F、H、J、A/L 与逗号句号：冷启动中文/英文、中英往返、普通/Shift/大写锁定、有/无预编辑；复制实际字符核对 Unicode。再验全部 26 键及横竖屏、深浅色。',
+        '- 冷启动是否恢复匹配的键盘类型和方案、组合动作执行顺序、英文单词候选、候选上屏以及英文状态下数字/符号返回，均需元书 1.11.0(558) 实机确认。',
+        '- melt_eng 需要 ASCII-OFF 才能使用词库。组合动作没有冒充“强制设为 false”的接口；首次选择通常按方案 reset 初始化，手机若定制了该项或记忆了 ASCII-ON，须在元书中确认。此皮肤不会修改你的输入方案文件。',
+        '- 通过元书应用或原生菜单独立更换方案/ASCII 选项不在皮肤路由控制内，不能保证同时改变布局。使用本皮肤的中英按钮或方案面板重新同步；没有声称支持这些外部入口的自动同步。',
+        '- iPad 普通键盘沿用已有布局与动作；浮动键盘使用 iPhone 配置。iPad 普通键盘的英文符号不在本轮验收范围内。',
+        '- HTML 为离线交互演示，不运行 RIME、不生成真实英文候选；300ms 是网页长按时间，原生长按时间由元书决定。', '',
+        '## 配置证据', '', '| 文件 | SHA-256 |', '| --- | --- |']
+    lines += [f'| {name} | `{hashlib.sha256((SKIN/name).read_bytes()).hexdigest()}` |' for name in documents]
+    if mismatches or route_failures:
+        lines += ['', '## 未通过明细', '', code(json.dumps(route_failures,ensure_ascii=False))]
+        for group,rows in result.items():
+            for row in rows:
+                if row['failures']:
+                    lines.append('- '+group+': '+code(json.dumps(row,ensure_ascii=False)))
+    lines += ['', '## 复核与依据', '', '```powershell',
+        'python scripts/build_skin.py', 'python -m unittest discover -s tests -v',
+        'python scripts/audit_letter_symbols.py', '```', '',
+        '退出码 0 表示上述配置审计通过，仍不代表实机验收通过。修复前的检查结果保存在同目录的《中英文符号核对报告-修复前.md》。', '',
+        '- [元书动作与键盘/方案组合切换](https://ihsiao.com/apps/hamster/v3/docs/guides/skins/action/)',
+        '- [元书配置类型与气泡引用](https://ihsiao.com/apps/hamster/v3/docs/guides/skins/keys-reference/)',
+        '- [元书通知机制](https://ihsiao.com/apps/hamster/v3/docs/guides/skins/notifications/)',
+        '- [薄荷 melt_eng 默认方案](https://github.com/Mintimate/oh-my-rime/blob/main/melt_eng.schema.yaml)', '']
+    output.parent.mkdir(parents=True,exist_ok=True)
+    output.write_text('\n'.join(lines),encoding='utf-8')
+    return ok
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=ROOT / 'docs/中英文符号核对报告.md')
-    args = parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output',type=Path,default=ROOT/'docs/中英文符号核对报告.md')
+    args=parser.parse_args()
     validate_skin()
-    documents = {f'{theme}/pinyin{orientation}.yaml': json.loads(
-        (SKIN / theme / f'pinyin{orientation}.yaml').read_text(encoding='utf-8'))
-        for theme in ('light', 'dark') for orientation in ('Portrait', 'Landscape')}
-    result = audit_documents(documents)
-    ok = write_report(result, documents, args.output)
+    documents={f'{theme}/{kind}{orientation}.yaml':json.loads(
+        (SKIN/theme/f'{kind}{orientation}.yaml').read_text(encoding='utf-8'))
+        for theme in ('light','dark') for orientation in ('Portrait','Landscape') for kind in ('pinyin','alphabetic')}
+    result=audit_documents(documents)
+    ok=write_report(result,documents,args.output)
     print(f'Report: {args.output}')
     print(f'Letter cases: {len(result["letters"])}; mismatches: {sum(bool(row["failures"]) for row in result["letters"])}')
     return 0 if ok else 1
 
 
-if __name__ == '__main__':
+if __name__=='__main__':
     raise SystemExit(main())

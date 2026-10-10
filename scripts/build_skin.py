@@ -102,7 +102,7 @@ def validate_action(action, context):
             for nested in value:
                 validate_action(nested, context)
         else:
-            require(kind in {"character", "symbol", "shortcut", "keyboardType"}, f"{context}: unknown action type {kind}")
+            require(kind in {"character", "symbol", "shortcut", "keyboardType", "switchRimeSchema"}, f"{context}: unknown action type {kind}")
             require(isinstance(value, str) and bool(value), f"{context}: empty action value")
             if kind == "shortcut":
                 require(value in SHORTCUTS, f"{context}: unknown shortcut {value}")
@@ -264,7 +264,7 @@ def validate_image_resources(doc, folder):
 def validate_skin(skin=SKIN):
     config = json.loads((skin / "config.yaml").read_text(encoding="utf-8"))
     required = set()
-    for keyboard in ("pinyin", "numeric", "symbolic"):
+    for keyboard in ("pinyin", "alphabetic", "numeric", "symbolic", "skinSchemes"):
         for device, scenes in (("iPhone", ("portrait", "landscape")), ("iPad", ("portrait", "landscape", "floating"))):
             for scene in scenes:
                 name = config.get(keyboard, {}).get(device, {}).get(scene)

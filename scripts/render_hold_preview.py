@@ -31,7 +31,7 @@ def hold_geometry(doc, letter, width, ascii_mode=False):
 
 
 def render_hold(letter, scheme, orientation='Portrait', width=390, ascii_mode=False):
-    name = 'pinyin' + orientation
+    name = ('alphabetic' if ascii_mode else 'pinyin') + orientation
     doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
     image = render_keyboard(name, scheme, width, preedit='' if ascii_mode else '12pt 拼音预编辑示意',
                             ascii_mode=ascii_mode, after_language_change=True).convert('RGBA')

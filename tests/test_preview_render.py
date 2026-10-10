@@ -28,6 +28,7 @@ class ClassificationHighlightTests(unittest.TestCase):
                 doc = load('pinyin' + orientation, scheme)
                 for initial in (False, True):
                     for step, english in enumerate((initial, not initial, initial, not initial, initial)):
+                        doc = load(('alphabetic' if english else 'pinyin') + orientation, scheme)
                         for shift, caps in ((False, False), (True, False), (False, True), (True, True)):
                             for i, letter in enumerate(catalog['letters']):
                                 for swipe in (False, True):
@@ -52,6 +53,7 @@ class ClassificationHighlightTests(unittest.TestCase):
                 doc = load('pinyin' + orientation, scheme)
                 for initial in (False, True):
                     for step, english in enumerate((initial, not initial, initial, not initial, initial)):
+                        doc = load(('alphabetic' if english else 'pinyin') + orientation, scheme)
                         for shift, caps in ((False, False), (True, False), (False, True), (True, True)):
                             for letter in 'qwertyuiopasdfghjklzxcvbnm':
                                 with self.subTest(scheme=scheme, orientation=orientation, initial=initial,

@@ -1,4 +1,4 @@
-// iPhone 主键盘：26 键 + 数字/符号上划；横竖屏共用键位。
+// One layout generator, two complete language-specific primary keyboards.
 local Keys = import '../Constants/Keys.libsonnet';
 local colors = import '../Constants/Colors.libsonnet';
 local fonts = import '../Constants/Fonts.libsonnet';
@@ -12,93 +12,49 @@ local Theme = import '../Components/Theme.libsonnet';
 local Widths = import '../Components/Widths.libsonnet';
 local name(c) = c + 'Button';
 local names(row) = [name(c) for c in std.stringChars(row)];
-
 {
-  new(isPortrait=true)::
+  new(isPortrait=true, english=false)::
     local insets = metrics.keyInsets.iPhone[if isPortrait then 'portrait' else 'landscape'];
+    local state = if english then 'English' else 'Chinese';
+    local hints = if english then Phone.englishLetterHints else Phone.letterHints;
     local key(c, width=Widths.iPhone.unit) =
       local n = name(c);
-      local topName = n + 'SwipeLabel';
-      local bottomName = n + 'LetterLabel';
-      local upperName = n + 'UppercaseForegroundStyle';
-      local chineseForeground = [topName + 'ForegroundStyle', upperName];
-      local englishTop = topName + 'EnglishForegroundStyle';
-      local englishForeground = [englishTop, bottomName + 'ForegroundStyle'];
-      local englishUpperForeground = [englishTop, upperName];
-      local byLanguage(chinese, english) = [
-        Style.when('rime$ascii_mode', false, chinese),
-        Style.when('rime$ascii_mode', true, english),
-      ];
-      // 前景数组只能全是样式名或全是条件，不能混写。
-      local normalForeground = byLanguage(chineseForeground, englishForeground);
+      local top = n + 'SwipeLabelForegroundStyle';
+      local upper = n + 'UppercaseForegroundStyle';
+      local lower = n + 'LetterLabelForegroundStyle';
       local painted = Button.alphabetic(n, Keys[n] + width + {
-        swipeUpAction: { symbol: Phone.letterHints[c] },
+        swipeUpAction: { symbol: hints[c] },
         layers: [
-          { name: topName, params: { text: Phone.letterHints[c], fontSize: 9, center: { x: 0.5, y: 0.18 },
-              foregroundNormalColor: colors.swipeHintColor, foregroundHighlightColor: colors.swipeHintColor } },
-          { name: bottomName, params: { text: c, fontSize: fonts.keyLabel, center: { x: 0.5, y: 0.59 } } },
+          { name: n + 'SwipeLabel', params: { text: hints[c], fontSize: 9,
+              center: { x: 0.5, y: 0.18 }, foregroundNormalColor: colors.swipeHintColor,
+              foregroundHighlightColor: colors.swipeHintColor } },
+          { name: n + 'LetterLabel', params: { text: c, fontSize: fonts.keyLabel,
+              center: { x: 0.5, y: 0.59 } } },
         ],
-      }, insets, { size: metrics.hint.iPhoneSize }) +
-        Hold.new(c, Phone.letterHints[c], isPortrait, 'Chinese') +
-        Hold.new(c, Phone.englishLetterHints[c], isPortrait, 'English') + {
+      }, insets, { size: metrics.hint.iPhoneSize });
+      painted + Hold.new(c, hints[c], isPortrait, state) + {
         [n]+: {
-          foregroundStyle: normalForeground,
-          uppercasedStateForegroundStyle: byLanguage(chineseForeground, englishUpperForeground),
-          capsLockedStateForegroundStyle: byLanguage(chineseForeground, englishUpperForeground),
-          notification: [n + 'ChineseLabelNotification', n + 'EnglishLabelNotification'],
-          hintSymbolsGridStyle: n + 'ChineseHoldGridStyle', hintSymbolsStyle: n + 'ChineseHoldListStyle',
+          foregroundStyle: [top, if english then lower else upper],
+          uppercasedStateForegroundStyle: [top, upper], capsLockedStateForegroundStyle: [top, upper],
+          notification: [],
+          hintSymbolsGridStyle: n + state + 'HoldGridStyle', hintSymbolsStyle: n + state + 'HoldListStyle',
         },
-        [upperName]+: { center: { x: 0.5, y: 0.59 } },
-        [englishTop]: Style.text({
-          text: Phone.englishLetterHints[c], fontSize: 9, center: { x: 0.5, y: 0.18 },
-          normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor,
-        }),
-        // 初始普通气泡按语言选字母；大小写状态显式覆盖，上划优先显示符号。
+        [upper]+: { center: { x: 0.5, y: 0.59 } },
         [n + 'HintStyle']+: {
-          foregroundStyle: byLanguage(n + 'HintForegroundStyle', n + 'LowerHintForegroundStyle'),
+          foregroundStyle: n + (if english then 'LowerHintForegroundStyle' else 'HintForegroundStyle'),
           uppercasedStateForegroundStyle: n + 'HintForegroundStyle',
           capsLockedStateForegroundStyle: n + 'HintForegroundStyle',
-          swipeUpForegroundStyle: byLanguage(n + 'SwipeHintForegroundStyle', n + 'EnglishSwipeHintForegroundStyle'),
+          swipeUpForegroundStyle: n + 'SwipeHintForegroundStyle',
         },
-        [n + 'LowerHintForegroundStyle']: Style.text({
-          text: c, fontSize: fonts.hintLabel, normalColor: colors.standardCalloutForegroundColor,
-        }),
-        [n + 'SwipeHintForegroundStyle']: Style.text({
-          text: Phone.letterHints[c], fontSize: fonts.hintLabel,
-          normalColor: colors.standardCalloutForegroundColor,
-        }),
-        [n + 'EnglishSwipeHintForegroundStyle']: Style.text({
-          text: Phone.englishLetterHints[c], fontSize: fonts.hintLabel,
-          normalColor: colors.standardCalloutForegroundColor,
-        }),
-      };
-      // 通知会重新构造键面；共享完整定义，避免丢失 A/L 的 bounds、气泡或动作。
-      local baseNode = { [k]: painted[n][k] for k in std.objectFields(painted[n]) if k != 'notification' };
-      painted + {
-        [n + state + 'LabelNotification']: baseNode + {
-          notificationType: 'rime', rimeNotificationType: 'optionChanged',
-          rimeOptionName: 'ascii_mode', rimeOptionValue: state == 'English',
-          foregroundStyle: if state == 'Chinese' then chineseForeground else englishForeground,
-          uppercasedStateForegroundStyle: if state == 'Chinese' then chineseForeground else englishUpperForeground,
-          capsLockedStateForegroundStyle: if state == 'Chinese' then chineseForeground else englishUpperForeground,
-          swipeUpAction: { symbol: if state == 'Chinese' then Phone.letterHints[c] else Phone.englishLetterHints[c] },
-          hintStyle: n + state + 'HintStyle',
-          hintSymbolsGridStyle: n + state + 'HoldGridStyle', hintSymbolsStyle: n + state + 'HoldListStyle',
-        }
-        for state in ['Chinese', 'English']
-      } + {
-        [n + state + 'HintStyle']: painted[n + 'HintStyle'] + {
-          foregroundStyle: n + (if state == 'Chinese' then 'HintForegroundStyle' else 'LowerHintForegroundStyle'),
-          swipeUpForegroundStyle: n + (if state == 'Chinese' then 'SwipeHintForegroundStyle' else 'EnglishSwipeHintForegroundStyle'),
-        }
-        for state in ['Chinese', 'English']
+        [n + 'LowerHintForegroundStyle']: Style.text({ text: c, fontSize: fonts.hintLabel,
+          normalColor: colors.standardCalloutForegroundColor }),
+        [n + 'SwipeHintForegroundStyle']: Style.text({ text: hints[c], fontSize: fonts.hintLabel,
+          normalColor: colors.standardCalloutForegroundColor }),
       };
     Style.merge([
-      Phone.base(isPortrait, mainControls=true),
-      Hold.shared,
+      Phone.base(isPortrait, mainControls=true, english=english), Hold.shared,
       { keyboardLayout: [
-        Layout.row(names('qwertyuiop')),
-        Layout.row(names('asdfghjkl')),
+        Layout.row(names('qwertyuiop')), Layout.row(names('asdfghjkl')),
         Layout.row(['shiftButton'] + names('zxcvbnm') + ['backspaceButton']),
         Layout.row(['symbolicButton', 'numericButton', 'chineseCommaButton', 'spaceButton',
                     'chinesePeriodButton', 'asciiModeButton', 'enterButton']),
@@ -112,9 +68,8 @@ local names(row) = [name(c) for c in std.stringChars(row)];
       Button.system('backspaceButton', Keys.backspaceButton + Widths.iPhone.sideRight),
       Button.system('symbolicButton', Keys.symbolicButton + { text: '符号', size: { width: '1.5/10' } }),
       Button.system('numericButton', Keys.numericButton + Widths.iPhone.unit),
-      Phone.punctuation(insets),
+      Phone.punctuation(insets, english),
       Button.alphabetic('spaceButton', Keys.spaceButton + { size: { width: '3/10' } }, insets, hint=null),
-      Phone.language(Widths.iPhone.unit),
-      Phone.enter({ size: { width: '1.5/10' } }),
+      Phone.language(Widths.iPhone.unit, english), Phone.enter({ size: { width: '1.5/10' } }),
     ]),
 }

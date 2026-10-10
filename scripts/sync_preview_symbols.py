@@ -15,6 +15,11 @@ def sync():
     result, count = re.subn(r'const letterSymbols = [^\n]*;', lambda _: declaration, source, count=1)
     if count != 1:
         raise ValueError('Missing preview symbol catalog declaration')
+    routes = json.loads((ROOT / 'default/jsonnet/Constants/InputRoutes.json').read_text(encoding='utf-8'))
+    result, count = re.subn(r'const inputRoutes = [^\n]*;',
+        lambda _: 'const inputRoutes = ' + json.dumps(routes, ensure_ascii=False) + ';', result, count=1)
+    if count != 1:
+        raise ValueError('Missing preview input routes declaration')
     path.write_text(result, encoding='utf-8', newline='\n')
 
 

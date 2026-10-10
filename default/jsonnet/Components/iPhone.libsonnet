@@ -9,6 +9,7 @@ local metrics = import '../Constants/Metrics.libsonnet';
 local fonts = import '../Constants/Fonts.libsonnet';
 local Keys = import '../Constants/Keys.libsonnet';
 local letterSymbols = import '../Constants/LetterSymbols.json';
+local Routes = import 'InputRoutes.libsonnet';
 
 local returnForeground = [
   Style.when('$returnKeyType', [0], 'phoneReturnIcon'),
@@ -51,7 +52,7 @@ local text(label, extra={}) = Style.text({
     for i in std.range(0, 25)
   },
 
-  base(isPortrait, mainControls=false)::
+  base(isPortrait, mainControls=false, english=null)::
     local iconInsets = if isPortrait then { top: 15.4, bottom: 15.4, left: 6, right: 6 }
       else { top: 9.8, bottom: 9.8, left: 6, right: 6 };
     local languageIcon(state) = Style.fileImage({
@@ -70,7 +71,8 @@ local text(label, extra={}) = Style.text({
       highlightImage: { file: 'punctuation', image: name },
     });
     Style.merge([
-    Preedit.new(fontSize=fonts.iPhonePreedit), Toolbar.new(phoneControls=true, mainControls=mainControls),
+    Preedit.new(fontSize=fonts.iPhonePreedit), Toolbar.new(phoneControls=true, mainControls=mainControls,
+      schemeAction=if english == null then { shortcut: '#方案切换' } else { keyboardType: 'skinSchemes' }),
     Theme.shared(metrics.keyInsets.iPhone[if isPortrait then 'portrait' else 'landscape']),
     {
       keyboardHeight: metrics.keyboardHeight.iPhone[if isPortrait then 'portrait' else 'landscape'],
@@ -109,13 +111,22 @@ local text(label, extra={}) = Style.text({
     backgroundStyle: Theme.blueBackgroundName, foregroundStyle: returnForeground,
     notification: ['phoneReturnTypeNotification', 'phoneReturnPreeditNotification'],
   }),
-  language(width):: Button.system('asciiModeButton', Keys.asciiModeButton + width + {
-    foregroundStyle: languageForeground, notification: ['phoneAsciiNotification'],
-  }),
-  punctuation(insets):: Style.merge([
+  language(width, english=null):: Button.system('asciiModeButton', Keys.asciiModeButton + width + (
+    if english == null then { foregroundStyle: languageForeground, notification: ['phoneAsciiNotification'] }
+    else {
+      foregroundStyle: if english then 'phoneEnglishModeIcon' else 'phoneChineseModeIcon',
+      notification: [],
+      action: Routes.to(if english then Routes.config.defaultChinese else Routes.config.english),
+    }
+  )),
+  punctuation(insets, english=null):: Style.merge([
     Button.alphabetic('chineseCommaButton', Keys.chineseCommaButton + { size: { width: '1/10' },
-      foregroundStyle: commaForeground, notification: ['phoneCommaNotification'] }, insets, hint=null),
+      foregroundStyle: if english == null then commaForeground else if english then 'phoneEnglishCommaLabel' else 'phoneChineseCommaLabel',
+      action: { symbol: if english == true then ',' else '，' },
+      notification: if english == null then ['phoneCommaNotification'] else [] }, insets, hint=null),
     Button.alphabetic('chinesePeriodButton', Keys.chinesePeriodButton + { size: { width: '1/10' },
-      foregroundStyle: periodForeground, notification: ['phonePeriodNotification'] }, insets, hint=null),
+      foregroundStyle: if english == null then periodForeground else if english then 'phoneEnglishPeriodLabel' else 'phoneChinesePeriodLabel',
+      action: { symbol: if english == true then '.' else '。' },
+      notification: if english == null then ['phonePeriodNotification'] else [] }, insets, hint=null),
   ]),
 }

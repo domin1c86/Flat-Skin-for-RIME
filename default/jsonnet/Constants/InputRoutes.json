@@ -1,0 +1,10 @@
+{
+  "defaultChinese": "double_pinyin_flypy",
+  "english": "melt_eng",
+  "schemes": [
+    { "id": "double_pinyin_flypy", "label": "小鹤双拼－薄荷定制", "language": "zh" },
+    { "id": "rime_mint", "label": "薄荷拼音－全拼输入", "language": "zh" },
+    { "id": "rime_mint_flypy", "label": "薄荷拼音－小鹤混输", "language": "zh" },
+    { "id": "melt_eng", "label": "Easy English Nano", "language": "en" }
+  ]
+}

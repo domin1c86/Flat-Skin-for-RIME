@@ -7,6 +7,7 @@ local iPadPinyin = import 'Keyboards/iPadPinyin.libsonnet';
 local iPhoneNumeric = import 'Keyboards/iPhoneNumeric.libsonnet';
 local iPhonePinyin = import 'Keyboards/iPhonePinyin.libsonnet';
 local iPhoneSymbolic = import 'Keyboards/iPhoneSymbolic.libsonnet';
+local iPhoneSchemes = import 'Keyboards/iPhoneSchemes.libsonnet';
 
 // ===== 产物矩阵：文件名 -> 键盘定义 =====
 // 每份定义都会生成 light/ 与 dark/ 两个文件，两者的差别只在色值上，
@@ -14,6 +15,10 @@ local iPhoneSymbolic = import 'Keyboards/iPhoneSymbolic.libsonnet';
 local keyboards = {
   pinyinPortrait: iPhonePinyin.new(isPortrait=true),
   pinyinLandscape: iPhonePinyin.new(isPortrait=false),
+  alphabeticPortrait: iPhonePinyin.new(isPortrait=true, english=true),
+  alphabeticLandscape: iPhonePinyin.new(isPortrait=false, english=true),
+  schemesPortrait: iPhoneSchemes.new(isPortrait=true),
+  schemesLandscape: iPhoneSchemes.new(isPortrait=false),
   numericPortrait: iPhoneNumeric.new(isPortrait=true),
   numericLandscape: iPhoneNumeric.new(isPortrait=false),
   symbolicPortrait: iPhoneSymbolic.new(isPortrait=true),
@@ -48,6 +53,14 @@ local config = {
       landscape: 'iPadNumericLandscape',
       floating: 'numericPortrait',
     },
+  },
+  alphabetic: {
+    iPhone: { portrait: 'alphabeticPortrait', landscape: 'alphabeticLandscape' },
+    iPad: { portrait: 'iPadPinyinPortrait', landscape: 'iPadPinyinLandscape', floating: 'alphabeticPortrait' },
+  },
+  skinSchemes: {
+    iPhone: { portrait: 'schemesPortrait', landscape: 'schemesLandscape' },
+    iPad: { portrait: 'schemesPortrait', landscape: 'schemesLandscape', floating: 'schemesPortrait' },
   },
   symbolic: {
     iPhone: { portrait: 'symbolicPortrait', landscape: 'symbolicLandscape' },
