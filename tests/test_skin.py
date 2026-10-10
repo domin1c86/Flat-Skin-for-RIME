@@ -199,7 +199,8 @@ class GeneratedSkinTests(unittest.TestCase):
                     self.assertEqual(cn['normalImage'], {'file': 'punctuation', 'image': image})
                     self.assertEqual(cn['normalImage'], cn['highlightImage'])
                     self.assertEqual(cn['contentMode'], 'scaleAspectFit')
-                    self.assertEqual(cn['insets']['top'], cn['insets']['bottom'])
+                    drop = 28 / 3 if image == 'comma' else 8.5
+                    self.assertAlmostEqual((cn['insets']['top'] - cn['insets']['bottom']) / 2, drop)
                     self.assertEqual(cn['insets']['left'], cn['insets']['right'])
                     en = doc[selected_styles(node['foregroundStyle'], {'rime$ascii_mode': True})[0]]
                     self.assertEqual(en['text'], english)

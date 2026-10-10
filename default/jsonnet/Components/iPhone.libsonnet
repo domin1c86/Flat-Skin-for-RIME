@@ -53,10 +53,13 @@ local text(label, extra={}) = Style.text({
       normalImage: { file: 'language', image: state },
       highlightImage: { file: 'language', image: state },
     });
-    // 20pt 方形画布内按笔画边界居中，不受全角字形的左下留白影响。
-    local punctuationIcon(name) = Style.fileImage({
+    // 水平按笔画居中，垂直对齐 22.5pt 英文标点的字面位置。
+    local punctuationIcon(name) =
+      local drop = if name == 'comma' then 28 / 3 else 8.5;
+      local padding = if isPortrait then 17 else 10;
+      Style.fileImage({
       contentMode: 'scaleAspectFit',
-      insets: { top: if isPortrait then 17 else 10, bottom: if isPortrait then 17 else 10, left: 3, right: 3 },
+      insets: { top: padding + drop, bottom: padding - drop, left: 3, right: 3 },
       normalImage: { file: 'punctuation', image: name },
       highlightImage: { file: 'punctuation', image: name },
     });

@@ -81,7 +81,7 @@ class ClassificationHighlightTests(unittest.TestCase):
                     expected = atlas.crop((index * 380, 0, (index + 1) * 380, 410))
                     self.assertEqual(tile.tobytes(), expected.tobytes())
 
-    def test_chinese_punctuation_ink_is_centered_in_each_key(self):
+    def test_chinese_punctuation_is_horizontally_centered_at_english_height(self):
         from PIL import Image
         for scheme in ('light', 'dark'):
             atlas = Image.open(ROOT / 'default' / scheme / 'resources' / 'punctuation.png').convert('RGBA')
@@ -94,6 +94,7 @@ class ClassificationHighlightTests(unittest.TestCase):
                 doc = load('pinyin' + orientation, scheme)
                 rects = dict(layout_rectangles(doc, 'keyboardLayout', width, doc['keyboardHeight']))
                 image = render_keyboard('pinyin' + orientation, scheme, width=width)
+                english_image = render_keyboard('pinyin' + orientation, scheme, width=width, ascii_mode=True)
                 for key in ('chineseCommaButton', 'chinesePeriodButton'):
                     x, y, w, h = rects[key]
                     y += doc['preeditHeight'] + doc['toolbarHeight']
@@ -105,7 +106,14 @@ class ClassificationHighlightTests(unittest.TestCase):
                                   for pixel in crop.get_flattened_data()])
                     left, top, right, bottom = mask.getbbox()
                     self.assertAlmostEqual((left + right) / 2, crop.width / 2, delta=1)
-                    self.assertAlmostEqual((top + bottom) / 2, crop.height / 2, delta=1)
+                    english_crop = english_image.crop(tuple(round(v * SCALE) for v in (x, y, x + w, y + h)))
+                    english_mask = Image.new('L', english_crop.size)
+                    english_mask.putdata([255 if max(abs(pixel[i] - foreground[i]) for i in range(3)) < 64 else 0
+                                          for pixel in english_crop.get_flattened_data()])
+                    _, english_top, _, english_bottom = english_mask.getbbox()
+                    # Chinese punctuation keeps its ink centered horizontally,
+                    # but uses the same vertical ink center as English , and .
+                    self.assertAlmostEqual((top + bottom) / 2, (english_top + english_bottom) / 2, delta=1.5)
 
 
 if __name__ == '__main__':

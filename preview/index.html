@@ -64,7 +64,10 @@
     .key.system { background:var(--system); font-size:calc(16 * var(--u)); }
     .language-mark { position:absolute; inset:calc(11.4 * var(--u)) calc(3 * var(--u)); pointer-events:none; }
     .language-mark img { display:block; width:100%; height:100%; object-fit:contain; }
-    .punctuation-mark { display:block; width:calc(20 * var(--u)); height:calc(20 * var(--u)); }
+    .punctuation-mark { display:block; width:calc(20 * var(--u)); height:calc(20 * var(--u)); transform:translateY(calc(var(--punctuation-drop) * var(--u))); }
+    .centered-punctuation[data-value="，"] { --punctuation-drop:9.333333; }
+    /* Browser text line metrics place the English dot 1pt above the diagram's font. */
+    .centered-punctuation[data-value="。"] { --punctuation-drop:7.5; }
     body[data-orientation="landscape"] .language-mark { inset:calc(6.8 * var(--u)) calc(3 * var(--u)); }
     .key.accent { background:var(--accent); color:var(--on-accent); }
     .key .icon { font-size:calc(23 * var(--u)); }

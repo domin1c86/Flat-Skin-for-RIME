@@ -24,7 +24,7 @@ def font(size, text='', weight='regular'):
     return ImageFont.load_default()
 
 
-def selected(value):
+def selected(value, ascii_mode=False):
     if isinstance(value, str):
         return [value]
     refs = []
@@ -32,7 +32,7 @@ def selected(value):
         if isinstance(item, str):
             refs.append(item)
         else:
-            match = CONDITIONS.get(item['conditionKey'])
+            match = ascii_mode if item['conditionKey'] == 'rime$ascii_mode' else CONDITIONS.get(item['conditionKey'])
             expected = item['conditionValue']
             if match == expected or isinstance(expected, list) and match in expected:
                 refs += [item['styleName']] if isinstance(item['styleName'], str) else item['styleName']
@@ -96,7 +96,7 @@ def icon(draw, name, center, size, color):
             line([(8, 10), (8, 6), (10, 3), (14, 3), (16, 6), (16, 10)])
 
 
-def render_keyboard(name, scheme, width=390, category='常用'):
+def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False):
     doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
     if 'symbolCategoryData' in doc and category not in doc['symbolCategoryData']:
         raise ValueError(f'Unknown symbol category: {category}')
@@ -106,7 +106,7 @@ def render_keyboard(name, scheme, width=390, category='常用'):
     draw = ImageDraw.Draw(image)
 
     def paint(reference, rect, highlighted=False):
-        for ref in selected(reference):
+        for ref in selected(reference, ascii_mode):
             node = doc[ref]
             x, y, w, h = inset(rect, node.get('insets', {}))
             if node.get('buttonStyleType') == 'fileImage':
