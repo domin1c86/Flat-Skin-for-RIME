@@ -1,6 +1,7 @@
 # 扁平灰白皮肤配套：中英切换使用皮肤按钮，避免 Shift 另行切换 ASCII。
 # 保留全拼编码、词库、音节分隔和所有原有滤镜。
 patch:
+  "engine/processors/@before 0": lua_processor@*skin_scheme_memory
   "ascii_composer/good_old_caps_lock": false
   "ascii_composer/switch_key":
     Caps_Lock: noop

@@ -116,7 +116,7 @@ local text(label, extra={}) = Style.text({
     else {
       foregroundStyle: if english then 'phoneEnglishModeIcon' else 'phoneChineseModeIcon',
       notification: [],
-      action: Routes.to(if english then Routes.config.defaultChinese else Routes.config.english),
+      action: Routes.toggle(english),
     }
   )),
   punctuation(insets, english=null):: Style.merge([

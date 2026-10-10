@@ -57,6 +57,17 @@ class InputRouteTests(unittest.TestCase):
             with self.assertRaises(SkinError):
                 validate_action({'switchRimeSchema':value},'route')
 
+    def test_language_toggle_uses_reserved_memory_processor_key(self):
+        self.assertEqual(self.routes['toggleKeys'], 'Control+Shift+F12')
+        for orientation in ('Portrait', 'Landscape'):
+            for kind, target in (('pinyin', 'alphabetic'), ('alphabetic', 'pinyin')):
+                action = load(kind + orientation)['asciiModeButton']['action']
+                self.assertEqual(action, {'combine': [
+                    {'keyboardType': target}, {'sendKeys': self.routes['toggleKeys']}]})
+                validate_action(action, 'memory toggle')
+        with self.assertRaises(SkinError):
+            validate_action({'sendKeys': ''}, 'empty keys')
+
 
 if __name__=='__main__':
     unittest.main()

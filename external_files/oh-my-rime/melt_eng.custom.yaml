@@ -2,6 +2,7 @@
 # 与 melt_eng.schema.yaml 同目录，重新部署后生效。
 # @0 已核对为这份用户文件中的 ascii_mode；升级后先核对开关顺序。
 patch:
+  "engine/processors/@before 0": lua_processor@*skin_scheme_memory
   "switches/@0/reset": 0
   "translator/enable_completion": true
   "translator/enable_sentence": false

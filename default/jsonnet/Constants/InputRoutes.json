@@ -1,6 +1,7 @@
 {
   "defaultChinese": "double_pinyin_flypy",
   "english": "melt_eng",
+  "toggleKeys": "Control+Shift+F12",
   "schemes": [
     { "id": "double_pinyin_flypy", "label": "小鹤双拼－薄荷定制", "language": "zh" },
     { "id": "rime_mint", "label": "薄荷拼音－全拼输入", "language": "zh" },

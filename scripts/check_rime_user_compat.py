@@ -71,7 +71,10 @@ def patch_copy(source, patches):
                 current = current[int(part[1:])]
             else:
                 current = current.setdefault(part, {})
-        current[parts[-1]] = deepcopy(value)
+        if parts[-1].startswith('@before '):
+            current.insert(int(parts[-1].split()[1]), deepcopy(value))
+        else:
+            current[parts[-1]] = deepcopy(value)
     return result
 
 
@@ -131,6 +134,7 @@ def check(folder):
     selection = load(folder / 'default.custom.yaml')['patch']['schema_list']
     require([item['schema'] for item in selection] == ids, 'enabled list does not match skin picker')
     common = {
+        'engine/processors/@before 0': 'lua_processor@*skin_scheme_memory',
         'ascii_composer/good_old_caps_lock': False,
         'ascii_composer/switch_key': {key: 'noop' for key in
             ('Caps_Lock', 'Shift_L', 'Shift_R', 'Control_L', 'Control_R')},
@@ -202,8 +206,11 @@ def check(folder):
         for field in ('speller', 'schema'):
             require(effective[field] == source[field], f'{schema_id}: altered {field}')
         if schema_id != routes['english']:
-            for field in ('translator', 'melt_eng', 'cn_en', 'engine', 'switches'):
+            for field in ('translator', 'melt_eng', 'cn_en', 'switches'):
                 require(effective[field] == source[field], f'{schema_id}: altered Chinese {field}')
+            require(effective['engine']['processors'][1:] == source['engine']['processors'], 'changed original processors')
+            for field in ('filters', 'translators', 'segmentors'):
+                require(effective['engine'][field] == source['engine'][field], 'changed Chinese engine component')
         else:
             patterns = effective['recognizer']['patterns']
             for word in ('hello', 'Hello', 'HELLO', 'Hel'):
@@ -211,6 +218,10 @@ def check(folder):
             require(patterns['email'] == defaults['recognizer']['patterns']['email'], 'changed email')
             require(patterns['url'] == defaults['recognizer']['patterns']['url'], 'changed URL')
     lua_files.add('autocap_filter')
+    require((folder / 'lua/skin_scheme_memory.lua').is_file(), 'missing scheme-memory processor')
+    require((folder / 'lua/skin_scheme_memory.lua').read_bytes() ==
+            (ROOT / 'scripts/rime/skin_scheme_memory.lua').read_bytes(), 'stale scheme-memory processor copy')
+    lua_files.add('skin_scheme_memory')
     return {'schemes': len(ids), 'dependency_schemas_present': len(schemas) - sum(name.endswith('.schema.yaml') for name in missing),
             'dictionary_headers': len(dictionaries) - sum(name.endswith('.dict.yaml') for name in missing),
             'missing_from_user_folder': sorted(missing), 'lua_modules_present': len(lua_files),

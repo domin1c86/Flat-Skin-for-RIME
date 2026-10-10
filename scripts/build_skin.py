@@ -102,7 +102,7 @@ def validate_action(action, context):
             for nested in value:
                 validate_action(nested, context)
         else:
-            require(kind in {"character", "symbol", "shortcut", "keyboardType", "switchRimeSchema"}, f"{context}: unknown action type {kind}")
+            require(kind in {"character", "symbol", "shortcut", "keyboardType", "switchRimeSchema", "sendKeys"}, f"{context}: unknown action type {kind}")
             require(isinstance(value, str) and bool(value), f"{context}: empty action value")
             if kind == "shortcut":
                 require(value in SHORTCUTS, f"{context}: unknown shortcut {value}")

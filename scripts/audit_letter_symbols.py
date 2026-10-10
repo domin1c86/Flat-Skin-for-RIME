@@ -141,8 +141,7 @@ def inspect_routes(config, routes):
             for kind in ('pinyin', 'alphabetic'):
                 name=config[kind]['iPhone'][orientation]
                 doc=json.loads((SKIN/theme/(name+'.yaml')).read_text(encoding='utf-8'))
-                target=routes['english'] if kind=='pinyin' else routes['defaultChinese']
-                expected={'combine':[{'keyboardType':'alphabetic' if kind=='pinyin' else 'pinyin'}, {'switchRimeSchema':target}]}
+                expected={'combine':[{'keyboardType':'alphabetic' if kind=='pinyin' else 'pinyin'}, {'sendKeys':routes['toggleKeys']}]}
                 if doc['asciiModeButton']['action'] != expected:
                     failures.append(f'{theme}/{name}: language route')
                 if doc['toolbarSchemaButton']['action'] != {'keyboardType':'skinSchemes'}:
@@ -189,7 +188,7 @@ def write_report(result, documents, output):
         '## 当前结果', '',
         f'**配置审计：{"通过" if ok else "未通过"}；iOS 实机验收：待验证。**', '',
         '已拆分 pinyin 中文主键盘与 alphabetic 英文主键盘。每份文件在首次加载时就包含对应语言的上标、上滑动作、普通气泡、长按网格及回退列表，字母与标点不再依赖 ascii_mode 通知来更新。', '',
-        '中英按钮同步选择布局与方案：中文→alphabetic + melt_eng；英文→pinyin + double_pinyin_flypy。英文方案的 ASCII-OFF 状态不会把英文符号改成中文。英文回到中文固定选择当前约定的小鹤双拼，不自动记忆其他中文方案。', '',
+        '中英按钮通过 sendKeys 专用组合键调用配套 RIME Lua 处理器，并同步选择布局：中文→alphabetic + melt_eng；英文→pinyin + 最近一次中文方案。无记忆时默认小鹤双拼。必须安装配套四份补丁与 lua/skin_scheme_memory.lua 并重新部署；仅导入皮肤不会安装处理器。', '',
         '## 逐键结果', '',
         '| 按键 | 中文目标及码点 | 英文目标及码点 | 初始上标/上滑气泡 | 上滑动作 | 长按网格/回退 |',
         '| --- | --- | --- | --- | --- | --- |']
@@ -217,7 +216,7 @@ def write_report(result, documents, output):
         '- **尚未完成最小实机验证。** 此环境无法运行元书 iOS。已生成完整验证包与配置示意，不能将 Windows 配置/网页结果记为实机通过。',
         '- 先测 Q、F、H、J、A/L 与逗号句号：冷启动中文/英文、中英往返、普通/Shift/大写锁定、有/无预编辑；复制实际字符核对 Unicode。再验全部 26 键及横竖屏、深浅色。',
         '- 冷启动是否恢复匹配的键盘类型和方案、组合动作执行顺序、英文单词候选、候选上屏以及英文状态下数字/符号返回，均需元书 1.11.0(558) 实机确认。',
-        '- melt_eng 需要 ASCII-OFF 才能使用词库。组合动作没有冒充“强制设为 false”的接口；首次选择通常按方案 reset 初始化，手机若定制了该项或记忆了 ASCII-ON，须在元书中确认。此皮肤不会修改你的输入方案文件。',
+        '- melt_eng 需要 ASCII-OFF 才能使用词库。配套 Lua 在记忆切换后将引擎选项设为 false；方案面板仍按方案 reset 初始化。键盘内核能否同步处理布局与 Lua schema 通知，仍需实机确认。',
         '- 通过元书应用或原生菜单独立更换方案/ASCII 选项不在皮肤路由控制内，不能保证同时改变布局。使用本皮肤的中英按钮或方案面板重新同步；没有声称支持这些外部入口的自动同步。',
         '- iPad 普通键盘沿用已有布局与动作；浮动键盘使用 iPhone 配置。iPad 普通键盘的英文符号不在本轮验收范围内。',
         '- HTML 为离线交互演示，不运行 RIME、不生成真实英文候选；300ms 是网页长按时间，原生长按时间由元书决定。', '',

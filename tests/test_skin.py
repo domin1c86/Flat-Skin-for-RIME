@@ -320,7 +320,7 @@ class GeneratedSkinTests(unittest.TestCase):
                     self.assertEqual(icon['contentMode'], 'scaleAspectFit')
                     self.assertEqual(node['action'], {'combine': [
                         {'keyboardType': 'pinyin' if english else 'alphabetic'},
-                        {'switchRimeSchema': routes['defaultChinese'] if english else routes['english']}]})
+                        {'sendKeys': routes['toggleKeys']}]})
 
     def test_enter_styles_cover_all_system_return_types(self):
         for page in ('pinyin', 'numeric'):
