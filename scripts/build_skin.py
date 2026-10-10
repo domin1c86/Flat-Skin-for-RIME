@@ -28,6 +28,9 @@ REFERENCE_FIELDS = {
 }
 LAYOUT_FIELDS = ("toolbarLayout", "keyboardLayout", "horizontalCandidatesLayout", "verticalCandidatesLayout")
 STYLE_TYPES = {"geometry", "text", "systemImage", "assetImage", "fileImage"}
+STYLE_REFERENCE_FIELDS = {"backgroundStyle", "foregroundStyle", "uppercasedStateForegroundStyle",
+                          "capsLockedStateForegroundStyle", "preeditStateForegroundStyle",
+                          "swipeUpForegroundStyle", "swipeDownForegroundStyle"}
 CELL_TYPES = {"button", "symbols", "classifiedSymbols", "subClassifiedSymbols", "horizontalSymbols",
               "horizontalCandidates", "verticalCandidates", "numericSymbols", "categorySymbols"}
 STANDARD_ACTIONS = {"space", "enter", "tab", "shift", "backspace", "dismissKeyboard", "nextKeyboard",
@@ -64,6 +67,30 @@ def references(value):
                 yield item
 
 
+def validate_style_reference(value, context):
+    """Native arrays are either all names or all conditions, never a mixture."""
+    def names(item):
+        return isinstance(item, str) and bool(item) or (
+            isinstance(item, list) and bool(item) and all(isinstance(ref, str) and ref for ref in item))
+
+    if isinstance(value, str):
+        require(bool(value), f"{context}: empty style reference")
+        return
+    require(isinstance(value, list) and bool(value), f"{context}: invalid style reference")
+    if all(isinstance(item, str) for item in value):
+        require(names(value), f"{context}: empty style reference")
+        return
+    require(all(isinstance(item, dict) for item in value), f"{context}: mixed style reference array")
+    for item in value:
+        require(isinstance(item.get('conditionKey'), str) and bool(item['conditionKey']),
+                f"{context}: missing condition key")
+        expected = item.get('conditionValue')
+        require(type(expected) is bool or (
+            isinstance(expected, list) and bool(expected) and all(type(part) is int for part in expected)),
+            f"{context}: invalid condition value")
+        require(names(item.get('styleName')), f"{context}: invalid conditional style names")
+
+
 def validate_action(action, context):
     if isinstance(action, str):
         require(action in STANDARD_ACTIONS, f"{context}: unknown action {action}")
@@ -86,6 +113,8 @@ def validate_document(doc):
     for height in ("preeditHeight", "toolbarHeight", "keyboardHeight"):
         require(type(doc.get(height)) in (int, float) and doc[height] > 0, f"missing/invalid {height}")
     for path, key, value in walk(doc):
+        if key in STYLE_REFERENCE_FIELDS:
+            validate_style_reference(value, path)
         if key in REFERENCE_FIELDS or key == "Cell":
             for name in references(value):
                 require(name in doc, f"{path}: missing reference {name}")

@@ -22,39 +22,45 @@ local names(row) = [name(c) for c in std.stringChars(row)];
       local bottomName = n + 'LetterLabel';
       local upperName = n + 'UppercaseForegroundStyle';
       local chineseForeground = [topName + 'ForegroundStyle', upperName];
+      local englishForeground = [topName + 'ForegroundStyle', bottomName + 'ForegroundStyle'];
+      // 前景数组只能全是样式名或全是条件，不能混写。
       local normalForeground = [
-        topName + 'ForegroundStyle',
-        Style.when('rime$ascii_mode', false, upperName),
-        Style.when('rime$ascii_mode', true, bottomName + 'ForegroundStyle'),
+        Style.when('rime$ascii_mode', false, chineseForeground),
+        Style.when('rime$ascii_mode', true, englishForeground),
       ];
-      Button.alphabetic(n, Keys[n] + width + {
+      local painted = Button.alphabetic(n, Keys[n] + width + {
         swipeUpAction: if std.count(std.stringChars('qwertyuiop'), c) > 0
           then { character: Phone.letterHints[c] } else { symbol: Phone.letterHints[c] },
         layers: [
-          { name: topName, params: { text: Phone.letterHints[c], fontSize: 9, center: { y: 0.18 },
+          { name: topName, params: { text: Phone.letterHints[c], fontSize: 9, center: { x: 0.5, y: 0.18 },
               foregroundNormalColor: colors.swipeHintColor, foregroundHighlightColor: colors.swipeHintColor } },
-          { name: bottomName, params: { text: c, fontSize: fonts.keyLabel, center: { y: 0.59 } } },
+          { name: bottomName, params: { text: c, fontSize: fonts.keyLabel, center: { x: 0.5, y: 0.59 } } },
         ],
       }, insets, { size: metrics.hint.iPhoneSize }) + Hold.new(c, Phone.letterHints[c], isPortrait) + {
         [n]+: {
           foregroundStyle: normalForeground,
           uppercasedStateForegroundStyle: chineseForeground,
-          notification: [n + 'ChineseLabelNotification'],
+          capsLockedStateForegroundStyle: chineseForeground,
+          notification: [n + 'ChineseLabelNotification', n + 'EnglishLabelNotification'],
           hintSymbolsGridStyle: n + 'HoldGridStyle', hintSymbolsStyle: n + 'HoldListStyle',
         },
-        [n + 'ChineseLabelNotification']: {
-          notificationType: 'rime', rimeNotificationType: 'optionChanged',
-          rimeOptionName: 'ascii_mode', rimeOptionValue: false,
-          backgroundStyle: Theme.alphabeticBackgroundName, foregroundStyle: chineseForeground,
-          hintSymbolsGridStyle: n + 'HoldGridStyle', hintSymbolsStyle: n + 'HoldListStyle',
-        },
-        [upperName]+: { center: { y: 0.59 } },
+        [upperName]+: { center: { x: 0.5, y: 0.59 } },
         // 上划气泡需要独立前景，否则会继续显示普通按键的字母。
         [n + 'HintStyle']+: { swipeUpForegroundStyle: n + 'SwipeHintForegroundStyle' },
         [n + 'SwipeHintForegroundStyle']: Style.text({
           text: Phone.letterHints[c], fontSize: fonts.hintLabel,
           normalColor: colors.standardCalloutForegroundColor,
         }),
+      };
+      // 通知会重新构造键面；共享完整定义，避免丢失 A/L 的 bounds、气泡或动作。
+      local baseNode = { [k]: painted[n][k] for k in std.objectFields(painted[n]) if k != 'notification' };
+      painted + {
+        [n + state + 'LabelNotification']: baseNode + {
+          notificationType: 'rime', rimeNotificationType: 'optionChanged',
+          rimeOptionName: 'ascii_mode', rimeOptionValue: state == 'English',
+          foregroundStyle: if state == 'Chinese' then chineseForeground else englishForeground,
+        }
+        for state in ['Chinese', 'English']
       };
     Style.merge([
       Phone.base(isPortrait, mainControls=true),

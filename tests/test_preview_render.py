@@ -13,13 +13,66 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 HAS_PILLOW = importlib.util.find_spec('PIL') is not None
 if HAS_PILLOW:
     from PIL import ImageColor
-    from render_skin_preview import SCALE, inset, render_keyboard
+    from render_skin_preview import SCALE, inset, render_keyboard, selected, effective_button, button_foreground
 from test_skin import load
 from build_skin import layout_rectangles
 
 
 @unittest.skipUnless(HAS_PILLOW, 'Pillow is optional; install it to test preview pixels')
 class ClassificationHighlightTests(unittest.TestCase):
+    def test_renderer_rejects_mixed_native_style_arrays(self):
+        from build_skin import SkinError
+        with self.assertRaisesRegex(SkinError, 'mixed style reference array'):
+            selected(['hint', {'conditionKey': 'rime$ascii_mode', 'conditionValue': False, 'styleName': 'letter'}])
+
+    def test_letters_survive_initial_modes_and_language_cycles(self):
+        for scheme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('pinyin' + orientation, scheme)
+                for initial in (False, True):
+                    for step, english in enumerate((initial, not initial, initial, not initial, initial)):
+                        for shift, caps in ((False, False), (True, False), (False, True), (True, True)):
+                            for letter in 'qwertyuiopasdfghjklzxcvbnm':
+                                with self.subTest(scheme=scheme, orientation=orientation, initial=initial,
+                                                  step=step, letter=letter, shift=shift, caps=caps):
+                                    base = doc[letter + 'Button']
+                                    node = effective_button(doc, base, english, step > 0)
+                                    refs = selected(button_foreground(node, shift, caps), english)
+                                    self.assertEqual(len(refs), 2)
+                                    self.assertEqual(doc[refs[0]]['text'], next(iter(base['swipeUpAction'].values())))
+                                    expected = letter.upper() if not english or shift or caps else letter
+                                    self.assertEqual(doc[refs[1]]['text'], expected)
+                                    for key in ('size', 'bounds', 'backgroundStyle', 'action', 'uppercasedStateAction',
+                                                'swipeUpAction', 'hintStyle', 'hintSymbolsStyle', 'hintSymbolsGridStyle'):
+                                        self.assertEqual(node.get(key), base.get(key))
+                                    self.assertEqual(doc[refs[0]]['center'], {'x': .5, 'y': .18})
+                                    self.assertEqual(doc[refs[1]]['center'], {'x': .5, 'y': .59})
+
+    def test_letter_pixels_match_before_and_after_language_changes(self):
+        for scheme in ('light', 'dark'):
+            for orientation, width in (('Portrait', 320), ('Portrait', 390), ('Landscape', 568), ('Landscape', 680)):
+                name = 'pinyin' + orientation
+                doc = load(name, scheme)
+                rects = dict(layout_rectangles(doc, 'keyboardLayout', width, doc['keyboardHeight']))
+                for english in (False, True):
+                    for shift, caps in ((False, False), (True, False), (False, True)):
+                        before = render_keyboard(name, scheme, width, ascii_mode=english, shift=shift, caps_locked=caps)
+                        after = render_keyboard(name, scheme, width, ascii_mode=english, shift=shift,
+                                                caps_locked=caps, after_language_change=True)
+                        for letter in 'qwertyuiopasdfghjklzxcvbnm':
+                            with self.subTest(scheme=scheme, orientation=orientation, width=width,
+                                              letter=letter, english=english, shift=shift, caps=caps):
+                                x, y, w, h = rects[letter + 'Button']
+                                y += doc['preeditHeight'] + doc['toolbarHeight']
+                                crop = tuple(round(v * SCALE) for v in (x, y, x + w, y + h))
+                                initial, changed = before.crop(crop), after.crop(crop)
+                                self.assertEqual(initial.tobytes(), changed.tobytes())
+                                # Lower portion contains the letter, not the upper hint.
+                                ink = ImageColor.getrgb(doc['aButtonUppercaseForegroundStyle']['normalColor'])
+                                letter_area = changed.crop((0, round(h * .35 * SCALE), changed.width, round(h * .85 * SCALE)))
+                                self.assertTrue(any(max(abs(pixel[i] - ink[i]) for i in range(3)) < 32
+                                                    for pixel in letter_area.get_flattened_data()))
+
     def test_hold_anchor_centers_fit_phone_widths(self):
         from render_hold_preview import hold_geometry, render_hold
         from build_skin import length

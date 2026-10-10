@@ -42,6 +42,25 @@ class ValidatorRegressionTests(unittest.TestCase):
         with self.assertRaisesRegex(SkinError, 'invalid color'):
             validate_document(self.doc)
 
+    def test_mixed_foreground_array_fails(self):
+        self.doc['qButton']['foregroundStyle'] = [
+            'qButtonSwipeLabelForegroundStyle',
+            {'conditionKey': 'rime$ascii_mode', 'conditionValue': False,
+             'styleName': 'qButtonUppercaseForegroundStyle'},
+        ]
+        with self.assertRaisesRegex(SkinError, 'mixed style reference array'):
+            validate_document(self.doc)
+
+    def test_conditional_style_names_are_validated(self):
+        for value, message in ((['qButtonSwipeLabelForegroundStyle', 'missingLetter'], 'missing reference'),
+                               (['qButtonSwipeLabelForegroundStyle', {}], 'conditional style names')):
+            with self.subTest(value=value):
+                doc = load('pinyinPortrait')
+                doc['qButton']['foregroundStyle'] = [
+                    {'conditionKey': 'rime$ascii_mode', 'conditionValue': False, 'styleName': value}]
+                with self.assertRaisesRegex(SkinError, message):
+                    validate_document(doc)
+
     def test_missing_swipe_callout_reference_fails(self):
         for direction in ('Up', 'Down'):
             with self.subTest(direction=direction):
@@ -203,9 +222,14 @@ class GeneratedSkinTests(unittest.TestCase):
                         self.assertIn(hint, [doc[name]['text'] for name in refs])
                         expected_letter = letter.upper() if not english or field == 'uppercasedStateForegroundStyle' else letter
                         self.assertIn(expected_letter, [doc[name]['text'] for name in refs])
-                notification = doc[node['notification'][0]]
-                self.assertEqual(notification['rimeOptionValue'], False)
-                self.assertNotIn('action', notification)
+                for index, ref in enumerate(node['notification']):
+                    notification = doc[ref]
+                    self.assertEqual(notification['rimeOptionValue'], bool(index))
+                    # Native replacements must retain every geometry/interaction field.
+                    for key, value in node.items():
+                        if key not in ('notification', 'foregroundStyle'):
+                            self.assertEqual(notification[key], value)
+                    self.assertNotIn('notification', notification)
                 self.assertEqual(node['action'], {'character': letter})
                 self.assertEqual(node['uppercasedStateAction'], {'character': letter.upper()})
 
@@ -226,7 +250,7 @@ class GeneratedSkinTests(unittest.TestCase):
                         self.assertEqual(swipe['normalColor'], normal['normalColor'])
                         # Language/Shift only change the key face; neither overrides the callout.
                         for notification in node.get('notification', []):
-                            self.assertNotIn('hintStyle', doc[notification])
+                            self.assertEqual(doc[notification]['hintStyle'], node['hintStyle'])
 
     def test_function_row_order(self):
         doc = load('pinyinPortrait')

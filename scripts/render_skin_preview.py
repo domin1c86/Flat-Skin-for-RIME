@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-from build_skin import ROOT, SKIN, layout_rectangles, length
+from build_skin import ROOT, SKIN, layout_rectangles, length, validate_style_reference
 
 SCALE = 3
 CONDITIONS = {'$returnKeyType': 0, 'rime$ascii_mode': False, '$symbolicKeyboardLockState': False}
@@ -25,6 +25,9 @@ def font(size, text='', weight='regular'):
 
 
 def selected(value, ascii_mode=False):
+    if value is None:
+        return []
+    validate_style_reference(value, 'preview style reference')
     if isinstance(value, str):
         return [value]
     refs = []
@@ -37,6 +40,33 @@ def selected(value, ascii_mode=False):
             if match == expected or isinstance(expected, list) and match in expected:
                 refs += [item['styleName']] if isinstance(item['styleName'], str) else item['styleName']
     return refs
+
+
+def effective_button(doc, node, ascii_mode=False, after_language_change=False):
+    """Model initial styles separately from an ascii_mode notification replacement."""
+    if not after_language_change:
+        return node
+    notifications = node.get('notification', [])
+    if isinstance(notifications, str):
+        notifications = [notifications]
+    for ref in notifications:
+        replacement = doc[ref]
+        if (replacement.get('notificationType') == 'rime'
+                and replacement.get('rimeNotificationType') == 'optionChanged'
+                and replacement.get('rimeOptionName') == 'ascii_mode'
+                and replacement.get('rimeOptionValue') is ascii_mode):
+            # Only actions have the documented fallback to the original node.
+            actions = {key: value for key, value in node.items() if key == 'action' or key.endswith('Action')}
+            return actions | replacement
+    return node
+
+
+def button_foreground(node, shift=False, caps_locked=False):
+    if caps_locked and 'capsLockedStateForegroundStyle' in node:
+        return node['capsLockedStateForegroundStyle']
+    if (shift or caps_locked) and 'uppercasedStateForegroundStyle' in node:
+        return node['uppercasedStateForegroundStyle']
+    return node.get('foregroundStyle')
 
 
 def inset(rect, values):
@@ -96,7 +126,8 @@ def icon(draw, name, center, size, color):
             line([(8, 10), (8, 6), (10, 3), (14, 3), (16, 6), (16, 10)])
 
 
-def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False, preedit=''):
+def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False, preedit='',
+                    shift=False, caps_locked=False, after_language_change=False):
     doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
     if 'symbolCategoryData' in doc and category not in doc['symbolCategoryData']:
         raise ValueError(f'Unknown symbol category: {category}')
@@ -138,6 +169,7 @@ def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False
                     icon(draw, node['systemImageName'], point, size, color)
 
     def paint_cell(node, rect):
+        node = effective_button(doc, node, ascii_mode, after_language_change)
         bounds = node.get('bounds', {})
         x, y, w, h = rect
         visible_w = length(bounds.get('width'), w)
@@ -150,7 +182,7 @@ def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False
         rect = (x, y, visible_w, visible_h)
         paint(node.get('backgroundStyle'), rect)
         if node.get('type', 'button') == 'button':
-            paint(node.get('foregroundStyle'), rect)
+            paint(button_foreground(node, shift, caps_locked), rect)
             return
         if node['type'] == 'subClassifiedSymbols':
             values = doc[category]
@@ -197,19 +229,28 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=SKIN / 'demo.png')
     parser.add_argument('--category', choices=('常用', '中文', '英文'), default='常用', help='selected category shown in the symbol diagram')
+    parser.add_argument('--language-states', action='store_true', help='compare Chinese, English and English Shift after language notifications')
     args = parser.parse_args()
     gap, margin, title_height = 18, 24, 52
     board_width, board_height = 390, 281
     image = Image.new('RGB', ((3 * board_width + 2 * gap + 2 * margin) * SCALE,
                               (2 * (board_height + 36) + title_height + 2 * margin) * SCALE), '#f7f7f5')
     draw = ImageDraw.Draw(image)
-    draw.text((margin * SCALE, margin * SCALE), '扁平灰白 · iPhone', font=font(23, '扁平灰白'), fill='#242725')
+    title = '字母显示修复 · iPhone' if args.language_states else '扁平灰白 · iPhone'
+    draw.text((margin * SCALE, margin * SCALE), title, font=font(23, title), fill='#242725')
     draw.text(((margin + 850) * SCALE, (margin + 9) * SCALE), '配置示意 · 非实机截图', font=font(12, '配置示意'), fill='#747974')
     for row, scheme in enumerate(('light', 'dark')):
-        for column, (name, label) in enumerate((('pinyinPortrait', '主界面'), ('numericPortrait', '数字'), ('symbolicPortrait', '符号'))):
+        scenes = (('pinyinPortrait', '中文 / 切回后'), ('pinyinPortrait', '英文 / 切换后'),
+                  ('pinyinPortrait', '英文 Shift')) if args.language_states else (
+                      ('pinyinPortrait', '主界面'), ('numericPortrait', '数字'), ('symbolicPortrait', '符号'))
+        for column, (name, label) in enumerate(scenes):
             x, y = margin + column * (board_width + gap), margin + title_height + row * (board_height + 36)
             draw.text((x * SCALE, y * SCALE), label + (' / 浅色' if row == 0 else ' / 深色'), font=font(13, label), fill='#747974')
-            image.paste(render_keyboard(name, scheme, category=args.category, preedit='jian dan de' if name == 'pinyinPortrait' else ''), (x * SCALE, (y + 26) * SCALE))
+            image.paste(render_keyboard(name, scheme, category=args.category,
+                                        preedit='jian dan de' if name == 'pinyinPortrait' and (not args.language_states or column == 0) else '',
+                                        ascii_mode=args.language_states and column > 0,
+                                        shift=args.language_states and column == 2,
+                                        after_language_change=args.language_states), (x * SCALE, (y + 26) * SCALE))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     image.save(args.output, optimize=True)
     print(f'Rendered configuration diagram: {args.output}')
