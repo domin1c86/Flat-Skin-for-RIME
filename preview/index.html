@@ -155,7 +155,7 @@
     </section>
     <section class="hold-guide" aria-labelledby="hold-title">
       <h2 id="hold-title">长按三选气泡</h2>
-      <p>按住字母 300ms，左右滑动选择，松手输入。常规顺序：大写／符号／小写；左缘：符号／大写／小写；右缘：小写／大写／符号。边缘气泡将最外侧选项对齐按键。气泡打开后，上滑不再另行输入上标；滑远后取消，移回可继续选择。</p>
+      <p>按住字母 300ms，默认选中符号或数字，直接松手即可输入；左右滑动可改选字母。常规顺序：大写／符号／小写；左缘：符号／大写／小写；右缘：小写／大写／符号。边缘气泡将最外侧选项对齐按键。气泡打开后，上滑不再另行输入上标；滑远后取消，移回可继续选择。</p>
       <div class="hold-examples"></div>
       <button type="button" data-zoom="flat">体验扁平灰白 · 长按任意字母</button>
     </section>
@@ -389,8 +389,8 @@
         placement==='right'?keyCenter-84-edgeWidth/2:centeredX;
       gesture.holding=true;
       gesture.options=holdOptions(gesture.button.dataset.value,placement);
-      const current=state.language==='zh'||state.shift>0?gesture.button.dataset.value.toUpperCase():gesture.button.dataset.value;
-      gesture.initialIndex=gesture.options.indexOf(current);gesture.selected=gesture.initialIndex;
+      gesture.initialIndex=gesture.options.indexOf(hints[gesture.button.dataset.value]);
+      gesture.selected=gesture.initialIndex;
       keyboard.insertAdjacentHTML('beforeend',holdMarkup(gesture.options,gesture.selected,true));
       gesture.popup=keyboard.querySelector('.hold-popup.live');
       gesture.popup.dataset.placement=placement;
