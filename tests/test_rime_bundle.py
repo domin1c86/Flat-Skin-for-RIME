@@ -15,7 +15,8 @@ class RimeBundleTests(unittest.TestCase):
             path = build(Path(temp) / 'bundle.zip')
             with zipfile.ZipFile(path) as archive:
                 self.assertIsNone(archive.testzip())
-                self.assertEqual(len(archive.namelist()), 11)
+                self.assertEqual(len(archive.namelist()), 12)
+                self.assertNotIn('lua/skin_edit_probe.lua', archive.namelist())
                 self.assertTrue(all('userdb' not in name and 'dicts/' not in name
                                     and '.backups' not in name for name in archive.namelist()))
                 self.assertIn('lua/skin_context.lua', archive.namelist())

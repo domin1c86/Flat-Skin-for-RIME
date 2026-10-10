@@ -14,6 +14,7 @@ def build(output):
              for name in PATCHES}
     files.update({'lua/' + name + '.lua': ROOT / 'scripts/rime' / (name + '.lua') for name in LUA})
     files['输入法学习与联想.md'] = ROOT / 'docs/输入法学习与联想.md'
+    files['上屏改字自动学习评估.md'] = ROOT / 'docs/上屏改字自动学习评估.md'
     files['tools/manage_personal_dict.py'] = ROOT / 'scripts/manage_personal_dict.py'
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
