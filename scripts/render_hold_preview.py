@@ -4,11 +4,11 @@ import json
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 from build_skin import SKIN, ROOT, layout_rectangles, length
-from render_skin_preview import SCALE, font, inset, render_keyboard
+from render_skin_preview import SCALE, font, inset, render_keyboard, effective_button
 
 
-def hold_geometry(doc, letter, width):
-    key = doc[letter + 'Button']
+def hold_geometry(doc, letter, width, ascii_mode=False):
+    key = effective_button(doc, doc[letter + 'Button'], ascii_mode, True)
     rect = dict(layout_rectangles(doc, 'keyboardLayout', width, doc['keyboardHeight']))[letter + 'Button']
     x, y, w, h = rect
     bounds = key.get('bounds', {})
@@ -30,11 +30,12 @@ def hold_geometry(doc, letter, width):
     return grid, (panel_x, panel_y, panel_w, panel_h), (cell_w, cell_h)
 
 
-def render_hold(letter, scheme, orientation='Portrait', width=390):
+def render_hold(letter, scheme, orientation='Portrait', width=390, ascii_mode=False):
     name = 'pinyin' + orientation
     doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
-    image = render_keyboard(name, scheme, width, preedit='12pt 拼音预编辑示意').convert('RGBA')
-    grid, rect, cell_size = hold_geometry(doc, letter, width)
+    image = render_keyboard(name, scheme, width, preedit='' if ascii_mode else '12pt 拼音预编辑示意',
+                            ascii_mode=ascii_mode, after_language_change=True).convert('RGBA')
+    grid, rect, cell_size = hold_geometry(doc, letter, width, ascii_mode)
     x, y, w, h = rect
     background = doc[grid['backgroundStyle']]
     shadow = Image.new('RGBA', image.size)
@@ -62,16 +63,18 @@ def render_hold(letter, scheme, orientation='Portrait', width=390):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,default=ROOT/'dist/长按气泡配置示意.png')
+    parser.add_argument('--language-states', action='store_true', help='compare Chinese and English symbol options')
     args = parser.parse_args()
     margin, gap, width, height = 20, 16, 390, 281
-    result=Image.new('RGB',((margin*2+width*3+gap*2)*SCALE,(margin*2+50+2*(height+32))*SCALE),'#F7F7F5')
+    scenes = [(scheme, english) for scheme in ('light', 'dark') for english in ((False, True) if args.language_states else (False,))]
+    result=Image.new('RGB',((margin*2+width*3+gap*2)*SCALE,(margin*2+50+len(scenes)*(height+32))*SCALE),'#F7F7F5')
     draw=ImageDraw.Draw(result)
     draw.text((margin*SCALE,margin*SCALE),'原生配置示意 · 默认选择上标 · 非实机截图',font=font(18,'原生配置示意'),fill='#242725')
-    for row, scheme in enumerate(('light','dark')):
+    for row, (scheme, english) in enumerate(scenes):
         for col, (letter,label) in enumerate((('q','左缘 Q'),('f','常规 F'),('p','右缘 P'))):
             x=margin+col*(width+gap); y=margin+50+row*(height+32)
-            draw.text((x*SCALE,y*SCALE),label+(' / 浅色' if scheme=='light' else ' / 深色'),font=font(12,label),fill='#747974')
-            result.paste(render_hold(letter,scheme),(x*SCALE,(y+24)*SCALE))
+            draw.text((x*SCALE,y*SCALE),label+(' / 英文' if english else ' / 中文')+(' / 浅色' if scheme=='light' else ' / 深色'),font=font(12,label),fill='#747974')
+            result.paste(render_hold(letter,scheme,ascii_mode=english),(x*SCALE,(y+24)*SCALE))
     args.output.parent.mkdir(parents=True,exist_ok=True);result.save(args.output)
     print('Rendered:',args.output)
 

@@ -98,6 +98,8 @@
     .home-area { height:calc(34 * var(--u)); display:grid; align-items:end; justify-content:center; padding-bottom:calc(8 * var(--u)); }
     .home-indicator { width:calc(120 * var(--u)); height:calc(4 * var(--u)); border-radius:99px; background:var(--foreground); opacity:.3; }
     .feedback { position:absolute; top:calc(1 * var(--u)); right:calc(9 * var(--u)); font-size:calc(11 * var(--u)); color:var(--secondary); pointer-events:none; }
+    .short-popup { position:absolute; z-index:5; display:grid; place-items:center; width:calc(50 * var(--u)); height:calc(50 * var(--u)); background:var(--key); color:var(--foreground); border:calc(.5 * var(--u)) solid #c6c6c8; border-radius:calc(10 * var(--u)); font-size:calc(26 * var(--u)); line-height:1; pointer-events:none; }
+    body[data-mode="dark"] .short-popup { border-color:#69686a; }
     .hold-popup { --shadow-near:#0000001a; --shadow-far:#00000024; box-sizing:content-box; display:flex; width:calc(120 * var(--u)); padding:calc(4 * var(--u)); border:0; border-radius:calc(var(--radius) * var(--u)); background:var(--key); color:var(--foreground); box-shadow:0 calc(1 * var(--u)) 0 var(--edge),0 calc(2 * var(--u)) calc(6 * var(--u)) var(--shadow-near),0 calc(6 * var(--u)) calc(18 * var(--u)) var(--shadow-far); }
     body[data-mode="dark"] .hold-popup { --shadow-near:#00000033; --shadow-far:#0000005c; }
     .hold-popup.live { position:absolute; z-index:5; pointer-events:none; }
@@ -161,7 +163,7 @@
       <button type="button" data-zoom="flat">体验扁平灰白 · 长按任意字母</button>
     </section>
     <section class="comparison" aria-label="三种皮肤对照"></section>
-    <footer class="help"><p>点击试输入 · 上划输入上标 · 长按左右滑选 · 松手确认</p><p>原生皮肤已配套实现；网页 300ms 延迟与原生边缘适配有所不同，最终以元书实机为准。</p></footer>
+    <footer class="help"><p>普通气泡跟随语言与大小写 · 中文全角／英文半角符号 · 上划与长按输入上标</p><p>原生皮肤已配套实现；网页 300ms 延迟与原生边缘适配有所不同，最终以元书实机为准。</p></footer>
   </main>
   <dialog class="zoom-dialog" aria-labelledby="zoom-title"><div class="zoom-header"><h2 id="zoom-title"></h2><button class="dialog-close" type="button">关闭</button></div><div class="zoom-settings"><div class="segments" role="group" aria-label="放大预览颜色"><button type="button" data-setting="mode" data-value="light">浅色</button><button type="button" data-setting="mode" data-value="dark">深色</button></div><div class="segments" role="group" aria-label="放大预览方向"><button type="button" data-setting="orientation" data-value="portrait">竖屏</button><button type="button" data-setting="orientation" data-value="landscape">横屏</button></div><button type="button" data-action="language" class="zoom-language">中英切换</button><button type="button" data-action="shift" class="zoom-shift">Shift</button></div><div class="zoom-content"></div><p class="zoom-help">按住字母 300ms → 左右滑选 → 松手输入<br>中文状态也直接输入选中字母；此处不接入 RIME。</p></dialog>
   <script>
@@ -193,7 +195,11 @@
       unlock:'<rect x="5" y="10" width="14" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
       expand:'<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>'
     };
-    const hints = Object.fromEntries(Array.from('qwertyuiopasdfghjklzxcvbnm').map((c,i)=>[c,Array.from('1234567890~!@#%“”*?()-_:;`')[i]]));
+    // Generated from default/jsonnet/Constants/LetterSymbols.json; keep this file offline.
+    const letterSymbols = {"letters": "qwertyuiopasdfghjklzxcvbnm", "chinese": "1234567890～！＠＃％“”＊？（）－＿：；｀", "english": "1234567890~!@#%\"\"*?()-_:;`"};
+    function hintFor(letter) {
+      return Array.from(letterSymbols[state.language==='zh'?'chinese':'english'])[letterSymbols.letters.indexOf(letter)];
+    }
     const symbols = {
       common:['《','，','。','？','！','、','…','(',')','》','“','”','@','#','.','/','.com','~','—',':'],
       chinese:['，','。','？','！','、','；','：','…','（','）','《','》','“','”','‘','’','【','】','「','」'],
@@ -218,7 +224,7 @@
       return `<button type="button" class="key ${kind} ${hint?'has-hint':''}" data-action="${action}" data-value="${escapeHTML(value)}" ${hint?`data-hint="${escapeHTML(hint)}" title="上划：${escapeHTML(hint)}"`:''} aria-label="${escapeHTML(accessible)}${hint?`，上划输入 ${escapeHTML(hint)}`:''}" ${pressed!==null?`aria-pressed="${pressed}"`:''}>${hint?`<span class="hint">${escapeHTML(hint)}</span>`:''}${legend}</button>`;
     }
     function mainKeys() {
-      const letters = row => Array.from(row).map(c=>key(state.language==='zh'||state.shift?c.toUpperCase():c,'letter',c,'',hints[c])).join('');
+      const letters = row => Array.from(row).map(c=>key(state.language==='zh'||state.shift?c.toUpperCase():c,'letter',c,'',hintFor(c))).join('');
       return `<div class="keys main-keys"><div class="row row-top">${letters('qwertyuiop')}</div><div class="row row-home">${letters('asdfghjkl')}</div><div class="row row-bottom">${key('icon:'+(state.shift===2?'caps':'shift'),'shift','','system','',state.shift>0)}${letters('zxcvbnm')}${key('icon:delete','delete','','system')}</div><div class="row row-functions">${key('符号','page','symbol','system')}${key('123','page','numeric','system')}${key(state.language==='zh'?'，':',','insert',state.language==='zh'?'，':',',state.language==='zh'?'centered-punctuation':'')}${key('icon:space','space')}${key(state.language==='zh'?'。':'.','insert',state.language==='zh'?'。':'.',state.language==='zh'?'centered-punctuation':'')}${key(state.language==='zh'?'中':'英','language','','system','',state.language==='en')}${key('icon:enter','enter','','system accent')}</div></div>`;
     }
     function numericKeys() {
@@ -351,8 +357,21 @@
     const gestures=new Map();
     const suppressedClicks=new WeakSet();
     function holdOptions(letter,placement='center') {
-      const upper=letter.toUpperCase(),symbol=hints[letter];
+      const upper=letter.toUpperCase(),symbol=hintFor(letter);
       return placement==='left'?[symbol,upper,letter]:placement==='right'?[letter,upper,symbol]:[upper,symbol,letter];
+    }
+    function showShort(gesture,swiped=false) {
+      const keyboard=gesture.button.closest('.keyboard');
+      const board=keyboard.getBoundingClientRect(),rect=gesture.button.getBoundingClientRect();
+      const text=swiped?gesture.button.dataset.hint:
+        state.language==='zh'||state.shift?gesture.button.dataset.value.toUpperCase():gesture.button.dataset.value;
+      if(!gesture.popup){
+        keyboard.insertAdjacentHTML('beforeend','<div class="short-popup" aria-hidden="true"></div>');
+        gesture.popup=keyboard.querySelector('.short-popup');
+      }
+      gesture.popup.textContent=text;
+      gesture.popup.style.left=Math.min(Math.max(0,rect.x-board.x+rect.width/2-25*gesture.unit),board.width-50*gesture.unit)+'px';
+      gesture.popup.style.top=Math.max(0,rect.y-board.y-52*gesture.unit)+'px';
     }
     function holdMarkup(options,index,live=false) {
       return `<div class="hold-popup${live?' live':''}" role="listbox" aria-label="长按候选">${options.map((value,i)=>`<span class="hold-option" role="option" aria-selected="${i===index}">${escapeHTML(value)}</span>`).join('')}</div>`;
@@ -389,8 +408,9 @@
       const left=placement==='left'?keyCenter-4-edgeWidth/2:
         placement==='right'?keyCenter-84-edgeWidth/2:centeredX;
       gesture.holding=true;
+      gesture.popup?.remove();
       gesture.options=holdOptions(gesture.button.dataset.value,placement);
-      gesture.initialIndex=gesture.options.indexOf(hints[gesture.button.dataset.value]);
+      gesture.initialIndex=gesture.options.indexOf(hintFor(gesture.button.dataset.value));
       gesture.selected=gesture.initialIndex;
       keyboard.insertAdjacentHTML('beforeend',holdMarkup(gesture.options,gesture.selected,true));
       gesture.popup=keyboard.querySelector('.hold-popup.live');
@@ -428,14 +448,18 @@
       const unit=button.closest('.keyboard').getBoundingClientRect().width/(state.orientation==='landscape'?680:390);
       const gesture={button,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,unit,holding:false,timer:null};
       gestures.set(event.pointerId,gesture);
-      if(button.dataset.action==='letter' && !state.panel)gesture.timer=setTimeout(()=>showHold(event.pointerId),300);
+      if(button.dataset.action==='letter' && !state.panel){showShort(gesture);gesture.timer=setTimeout(()=>showHold(event.pointerId),300);}
       event.preventDefault();
     });
     document.addEventListener('pointermove',event=>{
       const gesture=gestures.get(event.pointerId);if(!gesture)return;
       gesture.lastX=event.clientX;gesture.lastY=event.clientY;
       if(gesture.holding)updateHold(gesture,event.clientX,event.clientY);
-      else if(Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)>10*gesture.unit)clearTimeout(gesture.timer);
+      else {
+        const dx=(event.clientX-gesture.x)/gesture.unit,dy=(event.clientY-gesture.y)/gesture.unit;
+        if(Math.hypot(dx,dy)>10)clearTimeout(gesture.timer);
+        if(gesture.button.dataset.action==='letter')showShort(gesture,dy < -12 && Math.abs(dy)>Math.abs(dx));
+      }
     });
     document.addEventListener('pointerup',event=>{
       const gesture=gestures.get(event.pointerId);

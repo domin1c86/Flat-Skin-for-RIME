@@ -20,6 +20,27 @@ from build_skin import layout_rectangles
 
 @unittest.skipUnless(HAS_PILLOW, 'Pillow is optional; install it to test preview pixels')
 class ClassificationHighlightTests(unittest.TestCase):
+    def test_short_callout_case_swipe_priority_and_notification_cycles(self):
+        from render_callout_preview import callout_foreground, render_callout
+        catalog = json.loads((ROOT / 'default/jsonnet/Constants/LetterSymbols.json').read_text(encoding='utf-8'))
+        for scheme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('pinyin' + orientation, scheme)
+                for initial in (False, True):
+                    for step, english in enumerate((initial, not initial, initial, not initial, initial)):
+                        for shift, caps in ((False, False), (True, False), (False, True), (True, True)):
+                            for i, letter in enumerate(catalog['letters']):
+                                for swipe in (False, True):
+                                    hint, foreground = callout_foreground(doc, letter, english, shift, caps, swipe, step > 0)
+                                    expected = catalog['english' if english else 'chinese'][i] if swipe else (
+                                        letter if english and not shift and not caps else letter.upper())
+                                    self.assertEqual(foreground['text'], expected)
+                                    self.assertEqual(foreground['fontSize'], 26)
+                                    self.assertEqual(hint['size'], {'width': 50, 'height': 50})
+                for english in (False, True):
+                    image = render_callout('f', scheme, english, orientation=orientation)
+                    self.assertEqual(image.width, 390*SCALE)
+
     def test_renderer_rejects_mixed_native_style_arrays(self):
         from build_skin import SkinError
         with self.assertRaisesRegex(SkinError, 'mixed style reference array'):
@@ -39,11 +60,11 @@ class ClassificationHighlightTests(unittest.TestCase):
                                     node = effective_button(doc, base, english, step > 0)
                                     refs = selected(button_foreground(node, shift, caps), english)
                                     self.assertEqual(len(refs), 2)
-                                    self.assertEqual(doc[refs[0]]['text'], next(iter(base['swipeUpAction'].values())))
+                                    expected_hint = '1234567890~!@#%""*?()-_:;`' if english else '1234567890～！＠＃％“”＊？（）－＿：；｀'
+                                    self.assertEqual(doc[refs[0]]['text'], expected_hint['qwertyuiopasdfghjklzxcvbnm'.index(letter)])
                                     expected = letter.upper() if not english or shift or caps else letter
                                     self.assertEqual(doc[refs[1]]['text'], expected)
-                                    for key in ('size', 'bounds', 'backgroundStyle', 'action', 'uppercasedStateAction',
-                                                'swipeUpAction', 'hintStyle', 'hintSymbolsStyle', 'hintSymbolsGridStyle'):
+                                    for key in ('size', 'bounds', 'backgroundStyle', 'action', 'uppercasedStateAction'):
                                         self.assertEqual(node.get(key), base.get(key))
                                     self.assertEqual(doc[refs[0]]['center'], {'x': .5, 'y': .18})
                                     self.assertEqual(doc[refs[1]]['center'], {'x': .5, 'y': .59})
@@ -84,6 +105,9 @@ class ClassificationHighlightTests(unittest.TestCase):
                     for letter in 'qwertyuiopasdfghjklzxcvbnm':
                         with self.subTest(orientation=orientation, scheme=scheme, width=width, letter=letter):
                             grid, (px, py, pw, ph), (cw, ch) = hold_geometry(doc, letter, width)
+                            _, english_panel, english_cell = hold_geometry(doc, letter, width, True)
+                            self.assertEqual(english_panel, (px, py, pw, ph))
+                            self.assertEqual(english_cell, (cw, ch))
                             self.assertGreaterEqual(px, 0)
                             self.assertLessEqual(px + pw, width + .01)
                             x, y, w, h = rects[letter + 'Button']

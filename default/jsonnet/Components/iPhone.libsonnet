@@ -8,6 +8,7 @@ local colors = import '../Constants/Colors.libsonnet';
 local metrics = import '../Constants/Metrics.libsonnet';
 local fonts = import '../Constants/Fonts.libsonnet';
 local Keys = import '../Constants/Keys.libsonnet';
+local letterSymbols = import '../Constants/LetterSymbols.json';
 
 local returnForeground = [
   Style.when('$returnKeyType', [0], 'phoneReturnIcon'),
@@ -40,8 +41,13 @@ local text(label, extra={}) = Style.text({
 {
   // 上标顺序与三张参考图、HTML 预览一致。
   letterHints: {
-    [std.stringChars('qwertyuiopasdfghjklzxcvbnm')[i]]:
-      std.stringChars('1234567890~!@#%“”*?()-_:;`')[i]
+    [std.stringChars(letterSymbols.letters)[i]]:
+      std.stringChars(letterSymbols.chinese)[i]
+    for i in std.range(0, 25)
+  },
+  englishLetterHints: {
+    [std.stringChars(letterSymbols.letters)[i]]:
+      std.stringChars(letterSymbols.english)[i]
     for i in std.range(0, 25)
   },
 

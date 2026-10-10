@@ -142,7 +142,7 @@ class GeneratedSkinTests(unittest.TestCase):
 
     def test_hold_options_order_default_and_literal_actions(self):
         letters = 'qwertyuiopasdfghjklzxcvbnm'
-        hints = '1234567890~!@#%“”*?()-_:;`'
+        hints = '1234567890～！＠＃％“”＊？（）－＿：；｀'
         for scheme in ('light', 'dark'):
             for orientation in ('Portrait', 'Landscape'):
                 doc = load('pinyin' + orientation, scheme)
@@ -167,7 +167,10 @@ class GeneratedSkinTests(unittest.TestCase):
                             self.assertEqual(doc[ref]['action'], {'symbol': value})
                             self.assertEqual(doc[ref]['uppercasedStateAction'], {'symbol': value})
                         for notification in node.get('notification', []):
-                            self.assertEqual(doc[notification]['hintSymbolsGridStyle'], node['hintSymbolsGridStyle'])
+                            notified = doc[notification]
+                            state_grid = doc[notified['hintSymbolsGridStyle']]
+                            for field in ('size', 'insets', 'anchor', 'selected', 'offset', 'moveStep', 'moveThreshold'):
+                                self.assertEqual(state_grid[field], grid[field])
                 background = doc['phoneHoldBackground']
                 self.assertEqual(background['cornerRadius'], doc['alphabeticButtonBackgroundStyle']['cornerRadius'])
                 self.assertNotIn('normalBorderColor', background)
@@ -210,7 +213,8 @@ class GeneratedSkinTests(unittest.TestCase):
 
     def test_twenty_six_hints_survive_uppercase(self):
         letters = 'qwertyuiopasdfghjklzxcvbnm'
-        hints = '1234567890~!@#%“”*?()-_:;`'
+        hints = '1234567890～！＠＃％“”＊？（）－＿：；｀'
+        english_hints = '1234567890~!@#%""*?()-_:;`'
         for orientation in ('Portrait', 'Landscape'):
             doc = load('pinyin' + orientation)
             for letter, hint in zip(letters, hints):
@@ -219,7 +223,8 @@ class GeneratedSkinTests(unittest.TestCase):
                 for field in ('foregroundStyle', 'uppercasedStateForegroundStyle'):
                     for english in (False, True):
                         refs = selected_styles(node[field], {'rime$ascii_mode': english})
-                        self.assertIn(hint, [doc[name]['text'] for name in refs])
+                        expected_hint = english_hints[letters.index(letter)] if english else hint
+                        self.assertIn(expected_hint, [doc[name]['text'] for name in refs])
                         expected_letter = letter.upper() if not english or field == 'uppercasedStateForegroundStyle' else letter
                         self.assertIn(expected_letter, [doc[name]['text'] for name in refs])
                 for index, ref in enumerate(node['notification']):
@@ -227,7 +232,9 @@ class GeneratedSkinTests(unittest.TestCase):
                     self.assertEqual(notification['rimeOptionValue'], bool(index))
                     # Native replacements must retain every geometry/interaction field.
                     for key, value in node.items():
-                        if key not in ('notification', 'foregroundStyle'):
+                        if key not in ('notification', 'foregroundStyle', 'uppercasedStateForegroundStyle',
+                                       'capsLockedStateForegroundStyle', 'swipeUpAction', 'hintStyle',
+                                       'hintSymbolsGridStyle', 'hintSymbolsStyle'):
                             self.assertEqual(notification[key], value)
                     self.assertNotIn('notification', notification)
                 self.assertEqual(node['action'], {'character': letter})
@@ -241,16 +248,64 @@ class GeneratedSkinTests(unittest.TestCase):
                     with self.subTest(scheme=scheme, orientation=orientation, letter=letter):
                         node = doc[letter + 'Button']
                         callout = doc[node['hintStyle']]
-                        swipe = doc[callout['swipeUpForegroundStyle']]
-                        normal = doc[callout['foregroundStyle']]
+                        swipe = doc[selected_styles(callout['swipeUpForegroundStyle'], {'rime$ascii_mode': False})[0]]
+                        normal = doc[selected_styles(callout['foregroundStyle'], {'rime$ascii_mode': False})[0]]
                         self.assertEqual(swipe['buttonStyleType'], 'text')
                         self.assertEqual(swipe['text'], next(iter(node['swipeUpAction'].values())))
                         self.assertEqual(normal['text'], letter.upper())
                         self.assertEqual(swipe['fontSize'], normal['fontSize'])
                         self.assertEqual(swipe['normalColor'], normal['normalColor'])
-                        # Language/Shift only change the key face; neither overrides the callout.
                         for notification in node.get('notification', []):
-                            self.assertEqual(doc[notification]['hintStyle'], node['hintStyle'])
+                            notified = doc[notification]
+                            hint = doc[notified['hintStyle']]
+                            self.assertEqual(doc[hint['swipeUpForegroundStyle']]['text'], notified['swipeUpAction']['symbol'])
+
+    def test_bubbles_and_symbol_actions_follow_language_and_case(self):
+        catalog = json.loads((ROOT / 'default/jsonnet/Constants/LetterSymbols.json').read_text(encoding='utf-8'))
+        for scheme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                doc = load('pinyin' + orientation, scheme)
+                for i, letter in enumerate(catalog['letters']):
+                    base = doc[letter + 'Button']
+                    for english in (False, True):
+                        symbol = catalog['english' if english else 'chinese'][i]
+                        notified = doc[base['notification'][int(english)]]
+                        for node in (base, notified):
+                            hint = doc[node['hintStyle']]
+                            # Initial conditional bubble and notified fixed bubble agree.
+                            self.assertEqual(doc[selected_styles(hint['swipeUpForegroundStyle'], {'rime$ascii_mode': english})[0]]['text'], symbol)
+                            for field in ('foregroundStyle', 'uppercasedStateForegroundStyle', 'capsLockedStateForegroundStyle'):
+                                expected = letter if english and field == 'foregroundStyle' else letter.upper()
+                                ref = selected_styles(hint[field], {'rime$ascii_mode': english})[0]
+                                self.assertEqual(doc[ref]['text'], expected)
+                            self.assertEqual(hint['backgroundStyle'], doc[base['hintStyle']]['backgroundStyle'])
+                            self.assertEqual(hint['size'], doc[base['hintStyle']]['size'])
+                        self.assertEqual(notified['swipeUpAction'], {'symbol': symbol})
+                        grid = doc[notified['hintSymbolsGridStyle']]
+                        option = doc[grid['symbolRows'][0][grid['selected']['col']]]
+                        self.assertEqual(option['action'], {'symbol': symbol})
+                        self.assertEqual(option['uppercasedStateAction'], option['action'])
+                        self.assertEqual(doc[option['foregroundStyle']]['text'], symbol)
+                        self.assertEqual(doc[notified['hintSymbolsStyle']]['symbolStyles'], grid['symbolRows'][0])
+                        actual = []
+                        for ref in grid['symbolRows'][0]:
+                            item = doc[ref]
+                            label = doc[item['foregroundStyle']]['text']
+                            actual.append(label)
+                            self.assertEqual(item['action'], {'symbol': label})
+                            self.assertEqual(item['uppercasedStateAction'], {'symbol': label})
+                        self.assertCountEqual(actual, [letter.upper(), symbol, letter])
+                        self.assertEqual(notified.get('bounds'), base.get('bounds'))
+
+    def test_symbol_mapping_matches_offline_preview(self):
+        import re
+        catalog = json.loads((ROOT / 'default/jsonnet/Constants/LetterSymbols.json').read_text(encoding='utf-8'))
+        self.assertEqual(catalog['letters'], 'qwertyuiopasdfghjklzxcvbnm')
+        self.assertEqual(catalog['chinese'], '1234567890～！＠＃％“”＊？（）－＿：；｀')
+        self.assertEqual(catalog['english'], '1234567890~!@#%""*?()-_:;`')
+        html = (ROOT / 'preview/index.html').read_text(encoding='utf-8')
+        declaration = re.search(r'const letterSymbols = (.*);', html).group(1)
+        self.assertEqual(json.loads(declaration), catalog)
 
     def test_function_row_order(self):
         doc = load('pinyinPortrait')

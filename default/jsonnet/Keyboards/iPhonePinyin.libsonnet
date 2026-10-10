@@ -22,33 +22,53 @@ local names(row) = [name(c) for c in std.stringChars(row)];
       local bottomName = n + 'LetterLabel';
       local upperName = n + 'UppercaseForegroundStyle';
       local chineseForeground = [topName + 'ForegroundStyle', upperName];
-      local englishForeground = [topName + 'ForegroundStyle', bottomName + 'ForegroundStyle'];
-      // 前景数组只能全是样式名或全是条件，不能混写。
-      local normalForeground = [
-        Style.when('rime$ascii_mode', false, chineseForeground),
-        Style.when('rime$ascii_mode', true, englishForeground),
+      local englishTop = topName + 'EnglishForegroundStyle';
+      local englishForeground = [englishTop, bottomName + 'ForegroundStyle'];
+      local englishUpperForeground = [englishTop, upperName];
+      local byLanguage(chinese, english) = [
+        Style.when('rime$ascii_mode', false, chinese),
+        Style.when('rime$ascii_mode', true, english),
       ];
+      // 前景数组只能全是样式名或全是条件，不能混写。
+      local normalForeground = byLanguage(chineseForeground, englishForeground);
       local painted = Button.alphabetic(n, Keys[n] + width + {
-        swipeUpAction: if std.count(std.stringChars('qwertyuiop'), c) > 0
-          then { character: Phone.letterHints[c] } else { symbol: Phone.letterHints[c] },
+        swipeUpAction: { symbol: Phone.letterHints[c] },
         layers: [
           { name: topName, params: { text: Phone.letterHints[c], fontSize: 9, center: { x: 0.5, y: 0.18 },
               foregroundNormalColor: colors.swipeHintColor, foregroundHighlightColor: colors.swipeHintColor } },
           { name: bottomName, params: { text: c, fontSize: fonts.keyLabel, center: { x: 0.5, y: 0.59 } } },
         ],
-      }, insets, { size: metrics.hint.iPhoneSize }) + Hold.new(c, Phone.letterHints[c], isPortrait) + {
+      }, insets, { size: metrics.hint.iPhoneSize }) +
+        Hold.new(c, Phone.letterHints[c], isPortrait, 'Chinese') +
+        Hold.new(c, Phone.englishLetterHints[c], isPortrait, 'English') + {
         [n]+: {
           foregroundStyle: normalForeground,
-          uppercasedStateForegroundStyle: chineseForeground,
-          capsLockedStateForegroundStyle: chineseForeground,
+          uppercasedStateForegroundStyle: byLanguage(chineseForeground, englishUpperForeground),
+          capsLockedStateForegroundStyle: byLanguage(chineseForeground, englishUpperForeground),
           notification: [n + 'ChineseLabelNotification', n + 'EnglishLabelNotification'],
-          hintSymbolsGridStyle: n + 'HoldGridStyle', hintSymbolsStyle: n + 'HoldListStyle',
+          hintSymbolsGridStyle: n + 'ChineseHoldGridStyle', hintSymbolsStyle: n + 'ChineseHoldListStyle',
         },
         [upperName]+: { center: { x: 0.5, y: 0.59 } },
-        // 上划气泡需要独立前景，否则会继续显示普通按键的字母。
-        [n + 'HintStyle']+: { swipeUpForegroundStyle: n + 'SwipeHintForegroundStyle' },
+        [englishTop]: Style.text({
+          text: Phone.englishLetterHints[c], fontSize: 9, center: { x: 0.5, y: 0.18 },
+          normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor,
+        }),
+        // 初始普通气泡按语言选字母；大小写状态显式覆盖，上划优先显示符号。
+        [n + 'HintStyle']+: {
+          foregroundStyle: byLanguage(n + 'HintForegroundStyle', n + 'LowerHintForegroundStyle'),
+          uppercasedStateForegroundStyle: n + 'HintForegroundStyle',
+          capsLockedStateForegroundStyle: n + 'HintForegroundStyle',
+          swipeUpForegroundStyle: byLanguage(n + 'SwipeHintForegroundStyle', n + 'EnglishSwipeHintForegroundStyle'),
+        },
+        [n + 'LowerHintForegroundStyle']: Style.text({
+          text: c, fontSize: fonts.hintLabel, normalColor: colors.standardCalloutForegroundColor,
+        }),
         [n + 'SwipeHintForegroundStyle']: Style.text({
           text: Phone.letterHints[c], fontSize: fonts.hintLabel,
+          normalColor: colors.standardCalloutForegroundColor,
+        }),
+        [n + 'EnglishSwipeHintForegroundStyle']: Style.text({
+          text: Phone.englishLetterHints[c], fontSize: fonts.hintLabel,
           normalColor: colors.standardCalloutForegroundColor,
         }),
       };
@@ -59,6 +79,17 @@ local names(row) = [name(c) for c in std.stringChars(row)];
           notificationType: 'rime', rimeNotificationType: 'optionChanged',
           rimeOptionName: 'ascii_mode', rimeOptionValue: state == 'English',
           foregroundStyle: if state == 'Chinese' then chineseForeground else englishForeground,
+          uppercasedStateForegroundStyle: if state == 'Chinese' then chineseForeground else englishUpperForeground,
+          capsLockedStateForegroundStyle: if state == 'Chinese' then chineseForeground else englishUpperForeground,
+          swipeUpAction: { symbol: if state == 'Chinese' then Phone.letterHints[c] else Phone.englishLetterHints[c] },
+          hintStyle: n + state + 'HintStyle',
+          hintSymbolsGridStyle: n + state + 'HoldGridStyle', hintSymbolsStyle: n + state + 'HoldListStyle',
+        }
+        for state in ['Chinese', 'English']
+      } + {
+        [n + state + 'HintStyle']: painted[n + 'HintStyle'] + {
+          foregroundStyle: n + (if state == 'Chinese' then 'HintForegroundStyle' else 'LowerHintForegroundStyle'),
+          swipeUpForegroundStyle: n + (if state == 'Chinese' then 'SwipeHintForegroundStyle' else 'EnglishSwipeHintForegroundStyle'),
         }
         for state in ['Chinese', 'English']
       };

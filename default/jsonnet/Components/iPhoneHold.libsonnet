@@ -4,8 +4,8 @@ local colors = import '../Constants/Colors.libsonnet';
 local metrics = import '../Constants/Metrics.libsonnet';
 
 {
-  new(c, symbol, isPortrait)::
-    local n = c + 'Button';
+  new(c, symbol, isPortrait, state='Chinese')::
+    local n = c + 'Button' + state;
     // 竖屏第二颗键也靠近边缘；横屏只需处理最外侧 Q/P。
     local left = std.count(std.stringChars(if isPortrait then 'qwa' else 'q'), c) > 0;
     local right = std.count(std.stringChars(if isPortrait then 'pol' else 'p'), c) > 0;
