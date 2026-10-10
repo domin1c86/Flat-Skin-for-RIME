@@ -136,7 +136,9 @@ function M.processor.init(env)
     if not chinese[env.engine.schema.schema_id] then return nil end
     local shared = databases[env.db_key]
     if shared then shared.users=shared.users+1; return shared.db end
-    local result = LevelDb("skin_context")
+    -- Native user-dictionary sync enumerates *.userdb in the user-dir root.
+    -- Our values have a different format, so keep this private DB in lua/.
+    local result = LevelDb("lua/skin_context")
     if result:open() then
       databases[env.db_key] = {db=result,users=1}
       return result

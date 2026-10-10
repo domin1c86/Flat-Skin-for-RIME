@@ -48,10 +48,11 @@ def prepare(source=ROOT / 'external_files/oh-my-rime'):
     (ROOT / '.tools').mkdir(exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix='rime-learning-', dir=ROOT / '.tools'))
     for p in source.glob('*.yaml'):
-        if p.name not in ('user.yaml', 'installation.yaml'):
+        if p.name not in ('user.yaml', 'installation.yaml', 'skin_scheme_memory.yaml'):
             shutil.copy2(p, work / p.name)
     for name in ('lua', 'dicts', 'opencc'):
-        shutil.copytree(source / name, work / name)
+        shutil.copytree(source / name, work / name,
+                        ignore=shutil.ignore_patterns('*.userdb*', '.backups', 'edit-probe.jsonl'))
     return work
 
 

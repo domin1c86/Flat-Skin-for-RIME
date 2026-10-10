@@ -64,6 +64,9 @@ def main():
     finally:
         engine.close()
     subprocess.run([sys.executable, __file__, '--resume', str(work)], check=True)
+    assert (work / 'lua/skin_context.userdb').is_dir()
+    assert not (work / 'skin_context.userdb').exists()
+    print('PASS: custom association DB outside native user-dictionary enumeration',flush=True)
     print('Isolated database:',work)
 
 
