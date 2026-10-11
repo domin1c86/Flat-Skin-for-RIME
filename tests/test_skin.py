@@ -360,16 +360,17 @@ class GeneratedSkinTests(unittest.TestCase):
 
     def test_main_toolbar_order_actions_and_small_width(self):
         expected = ['toolbarMenuButton', 'toolbarSpacer', 'toolbarSymbolicButton', 'toolbarEmojiButton',
-                    'toolbarPasteboardButton', 'toolbarSchemaButton']
+                    'toolbarPasteboardButton', 'toolbarSchemaButton', 'toolbarDismissButton']
         for scheme in ('light', 'dark'):
-            for orientation in ('Portrait', 'Landscape'):
-                doc = load('pinyin' + orientation, scheme)
+            for page in ('pinyinPortrait', 'pinyinLandscape', 'alphabeticPortrait', 'alphabeticLandscape'):
+                doc = load(page, scheme)
                 self.assertEqual([node['Cell'] for node in doc['toolbarLayout'][0]['HStack']['subviews']], expected)
                 self.assertEqual(doc['toolbarSymbolicButton']['action'], {'keyboardType': 'symbolic'})
                 self.assertEqual(doc['toolbarSchemaButton']['action'], {'keyboardType': 'skinSchemes'})
                 self.assertEqual(doc[doc['toolbarSymbolicButton']['foregroundStyle']]['systemImageName'], 'number')
                 self.assertEqual(doc[doc['toolbarSchemaButton']['foregroundStyle']]['systemImageName'], 'arrow.triangle.2.circlepath')
-                self.assertNotIn('toolbarDismissButton', doc)
+                self.assertEqual(doc['toolbarDismissButton']['action'], 'dismissKeyboard')
+                self.assertEqual(doc[doc['toolbarDismissButton']['foregroundStyle']]['systemImageName'], 'chevron.down')
                 for name in expected:
                     if name != 'toolbarSpacer':
                         self.assertEqual(doc[name]['size']['width'], 38)

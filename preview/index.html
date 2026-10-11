@@ -257,9 +257,9 @@
     function toolbar() {
       const main = state.page==='main';
       const symbolButton = main ? `<button type="button" data-action="page" data-value="symbol" aria-label="符号键盘">${icon('symbol')}</button>` : '';
-      const lastButtons = state.page==='main'
+      const lastButtons = (main
         ? `<button type="button" data-action="panel" data-value="scheme" aria-label="方案切换">${icon('scheme')}</button>`
-        : `<button type="button" data-action="dismiss" aria-label="收起键盘">${icon('down')}</button>`;
+        : '') + `<button type="button" data-action="dismiss" aria-label="收起键盘">${icon('down')}</button>`;
       const entries = [['menu','键盘菜单'],['emoji','Emoji'],['clipboard','剪贴板'],...(main ? [] : [['script','脚本']])];
       return `<div class="toolbar" aria-label="元书功能入口">${entries.map(([name,label])=>`<button type="button" data-action="panel" data-value="${name}" aria-label="${label}">${icon(name)}</button>${name==='menu'?'<span class="tool-spacer"></span>'+symbolButton:''}`).join('')}${lastButtons}</div>`;
     }

@@ -83,7 +83,7 @@ local backspaceName = 'verticalBackspaceButtonStyle';
   //
   // supportsSplit: 这份键盘布局是否有 Split（分体）版面。为 true 时在系统菜单键右侧
   // 加一颗 split 状态切换键；不支持的键盘（如 iPhone 竖屏）不加这颗键。
-  // mainControls 只在 iPhone 主界面启用：符号与方案切换替代收起键盘。
+  // mainControls 只在 iPhone 主界面启用：增加符号与方案切换，收起键盘始终放在最右侧。
   new(horizontalInsets={ top: 8, left: 3, bottom: 1 }, verticalInsets=null, supportsSplit=false, phoneControls=false, mainControls=false, schemeAction={ shortcut: '#方案切换' })::
     local useMainControls = phoneControls && mainControls;
     Style.merge([
@@ -102,7 +102,8 @@ local backspaceName = 'verticalBackspaceButtonStyle';
             ] + (if useMainControls then [] else [{ Cell: 'toolbarScriptButton' }]) else [])
           + (if useMainControls then [
               { Cell: 'toolbarSchemaButton' },
-            ] else [{ Cell: dismissButtonName }])
+            ] else [])
+          + [{ Cell: dismissButtonName }]
         } },
       ],
       [toolbarSpacerName]: {},
