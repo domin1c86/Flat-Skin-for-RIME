@@ -1,4 +1,10 @@
 .tools/
+/.worktree/
 dist/
 __pycache__/
 *.pyc
+
+# 用于放置自己的输入法
+/external_files/
+/worktree/
+/sync/
