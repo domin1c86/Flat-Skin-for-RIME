@@ -143,7 +143,7 @@ class GeneratedSkinTests(unittest.TestCase):
 
     def test_hold_options_order_default_and_literal_actions(self):
         letters = 'qwertyuiopasdfghjklzxcvbnm'
-        hints = '1234567890～！＠＃％“”＊？（）－＿：；｀'
+        hints = '1234567890～！＠＃％“”＊？（）-_：；`'
         for scheme in ('light', 'dark'):
             for orientation in ('Portrait', 'Landscape'):
                 doc = load('pinyin' + orientation, scheme)
@@ -269,7 +269,7 @@ class GeneratedSkinTests(unittest.TestCase):
         import re
         catalog = json.loads((ROOT / 'default/jsonnet/Constants/LetterSymbols.json').read_text(encoding='utf-8'))
         self.assertEqual(catalog['letters'], 'qwertyuiopasdfghjklzxcvbnm')
-        self.assertEqual(catalog['chinese'], '1234567890～！＠＃％“”＊？（）－＿：；｀')
+        self.assertEqual(catalog['chinese'], '1234567890～！＠＃％“”＊？（）-_：；`')
         self.assertEqual(catalog['english'], '1234567890~!@#%""*?()-_:;`')
         html = (ROOT / 'preview/index.html').read_text(encoding='utf-8')
         declaration = re.search(r'const letterSymbols = (.*);', html).group(1)

@@ -171,7 +171,7 @@
       <button type="button" data-zoom="flat">体验扁平灰白 · 长按任意字母</button>
     </section>
     <section class="comparison" aria-label="三种皮肤对照"></section>
-    <footer class="help"><p>普通气泡跟随语言与大小写 · 中文全角／英文半角符号 · 上划与长按输入上标</p><p>原生皮肤已配套实现；网页 300ms 延迟与原生边缘适配有所不同，最终以元书实机为准。</p></footer>
+    <footer class="help"><p>普通气泡跟随语言与大小写 · 中文 C/V/M 与数字保留半角 · 上划与长按输入上标</p><p>原生皮肤已配套实现；网页 300ms 延迟与原生边缘适配有所不同，最终以元书实机为准。</p></footer>
   </main>
   <dialog class="zoom-dialog" aria-labelledby="zoom-title"><div class="zoom-header"><h2 id="zoom-title"></h2><button class="dialog-close" type="button">关闭</button></div><div class="zoom-settings"><div class="segments" role="group" aria-label="放大预览颜色"><button type="button" data-setting="mode" data-value="light">浅色</button><button type="button" data-setting="mode" data-value="dark">深色</button></div><div class="segments" role="group" aria-label="放大预览方向"><button type="button" data-setting="orientation" data-value="portrait">竖屏</button><button type="button" data-setting="orientation" data-value="landscape">横屏</button></div><button type="button" data-action="language" class="zoom-language">中英切换</button><button type="button" data-action="shift" class="zoom-shift">Shift</button></div><div class="zoom-content"></div><p class="zoom-help">按住字母 300ms → 左右滑选 → 松手输入<br>中文状态也直接输入选中字母；此处不接入 RIME。</p></dialog>
   <script>
@@ -182,7 +182,7 @@
       { id:'flat', name:'扁平灰白', description:'灰白分明，去掉立体边缘，让键盘更安静。', detail:'无立体底边', colors:{light:['#e4e5e7','#ffffff','#cfd0d2','#007aff'],dark:['#1b1c1f','#37383c','#292a2e','#0a84ff']} },
       { id:'warm', name:'柔和暖色', description:'奶油白、暖灰与鼠尾草绿，给输入一点温度。', detail:'柔和底边', colors:{light:['#f0ece6','#fffaf2','#ddd5c9','#768e79'],dark:['#211e1b','#39332d','#494137','#a9bca0']} }
     ];
-    const inputRoutes = {"defaultChinese": "double_pinyin_flypy", "english": "melt_eng", "toggleKeys": "Control+Shift+F12", "candidateToggleKeys": "Control+Shift+F11", "schemes": [{"id": "double_pinyin_flypy", "label": "小鹤双拼－薄荷定制", "language": "zh"}, {"id": "rime_mint", "label": "薄荷拼音－全拼输入", "language": "zh"}, {"id": "rime_mint_flypy", "label": "薄荷拼音－小鹤混输", "language": "zh"}, {"id": "melt_eng", "label": "Easy English Nano", "language": "en"}]};
+    const inputRoutes = {"defaultChinese": "double_pinyin_flypy", "english": "melt_eng", "toggleKeys": "Control+Shift+F12", "candidateToggleKeys": "Control+Shift+F11", "contextCancelKeys": "Control+Shift+F9", "contextResetKeys": "Control+Shift+F10", "schemes": [{"id": "double_pinyin_flypy", "label": "小鹤双拼－薄荷定制", "language": "zh"}, {"id": "rime_mint", "label": "薄荷拼音－全拼输入", "language": "zh"}, {"id": "rime_mint_flypy", "label": "薄荷拼音－小鹤混输", "language": "zh"}, {"id": "melt_eng", "label": "Easy English Nano", "language": "en"}]};
     const memoryKey='flat-gray.lastChineseSchema';
     const candidateMemoryKey='flat-gray.englishCandidatesEnabled';
     const validChinese=id=>inputRoutes.schemes.some(item=>item.id===id && item.language==='zh');
@@ -215,7 +215,7 @@
       expand:'<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>'
     };
     // Generated from default/jsonnet/Constants/LetterSymbols.json; keep this file offline.
-    const letterSymbols = {"letters": "qwertyuiopasdfghjklzxcvbnm", "chinese": "1234567890～！＠＃％“”＊？（）－＿：；｀", "english": "1234567890~!@#%\"\"*?()-_:;`"};
+    const letterSymbols = {"letters": "qwertyuiopasdfghjklzxcvbnm", "chinese": "1234567890～！＠＃％“”＊？（）-_：；`", "english": "1234567890~!@#%\"\"*?()-_:;`"};
     function hintFor(letter) {
       return Array.from(letterSymbols[state.language==='zh'?'chinese':'english'])[letterSymbols.letters.indexOf(letter)];
     }

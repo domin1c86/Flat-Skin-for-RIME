@@ -27,8 +27,8 @@ EXPECTED = {
     'h': ('\u201c', '"'), 'j': ('\u201d', '"'),
     'k': ('\uff0a', '*'), 'l': ('\uff1f', '?'),
     'z': ('\uff08', '('), 'x': ('\uff09', ')'),
-    'c': ('\uff0d', '-'), 'v': ('\uff3f', '_'),
-    'b': ('\uff1a', ':'), 'n': ('\uff1b', ';'), 'm': ('\uff40', '\x60'),
+    'c': ('-', '-'), 'v': ('_', '_'),
+    'b': ('\uff1a', ':'), 'n': ('\uff1b', ';'), 'm': ('\x60', '\x60'),
 }
 CASE_STATES = [('普通', False, False), ('Shift', True, False), ('大写锁定', False, True)]
 COMPONENTS = ('键面上标', '上滑气泡', '上滑动作', '长按符号显示',
@@ -201,7 +201,7 @@ def write_report(result, documents, output):
         lines.append(f'| {letter.upper()} | {unicode_label(zh)} | {unicode_label(en)} | '
             f'{status(["键面上标","上滑气泡"])} | {status(["上滑动作"])} | '
             f'{status(["长按符号显示","长按符号动作","长按大写态符号动作","旧版长按列表"])} |')
-    lines += ['', '数字按约定保持半角；中文 H/J 分别为弯引号 “ / ”，英文均为直双引号 U+0022；V 中文为全角低线 U+FF3F，M 中文为全角反引号 U+FF40。长按仍保留大小写拉丁字母选项。', '',
+    lines += ['', '数字按约定保持半角；中文 H/J 分别为弯引号 “ / ”，英文均为直双引号 U+0022；C/V/M 在中英文键盘均为半角连字符 U+002D、低线 U+005F、反引号 U+0060。长按仍保留大小写拉丁字母选项。', '',
         '## 自动核对范围', '',
         f'- 8 份主键盘配置 × 26 键 × 普通/Shift/大写锁定 × 两种 ascii_mode × 初始/通知阶段，共 {len(result["letters"])} 组，每组检查 {len(COMPONENTS)} 项。',
         f'- 显式中文→英文→中文及反向布局切换：{len(result["cycles"])} 组；英文方案 ASCII-OFF：{len(result["english_schema"])} 组。',

@@ -62,7 +62,7 @@ class ClassificationHighlightTests(unittest.TestCase):
                                     node = effective_button(doc, base, english, step > 0)
                                     refs = selected(button_foreground(node, shift, caps), english)
                                     self.assertEqual(len(refs), 2)
-                                    expected_hint = '1234567890~!@#%""*?()-_:;`' if english else '1234567890～！＠＃％“”＊？（）－＿：；｀'
+                                    expected_hint = '1234567890~!@#%""*?()-_:;`' if english else '1234567890～！＠＃％“”＊？（）-_：；`'
                                     self.assertEqual(doc[refs[0]]['text'], expected_hint['qwertyuiopasdfghjklzxcvbnm'.index(letter)])
                                     expected = letter.upper() if not english or shift or caps else letter
                                     self.assertEqual(doc[refs[1]]['text'], expected)
