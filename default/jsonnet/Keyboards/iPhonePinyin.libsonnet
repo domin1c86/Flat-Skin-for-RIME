@@ -3,6 +3,7 @@ local Keys = import '../Constants/Keys.libsonnet';
 local colors = import '../Constants/Colors.libsonnet';
 local fonts = import '../Constants/Fonts.libsonnet';
 local metrics = import '../Constants/Metrics.libsonnet';
+local mainKeyboard = import '../Constants/MainKeyboard.json';
 local Button = import '../Components/Button.libsonnet';
 local Layout = import '../Components/Layout.libsonnet';
 local Phone = import '../Components/iPhone.libsonnet';
@@ -14,6 +15,7 @@ local name(c) = c + 'Button';
 local names(row) = [name(c) for c in std.stringChars(row)];
 {
   new(isPortrait=true, english=false)::
+    assert std.isNumber(mainKeyboard.sidePadding) && mainKeyboard.sidePadding >= 0 && mainKeyboard.sidePadding <= 24;
     local insets = metrics.keyInsets.iPhone[if isPortrait then 'portrait' else 'landscape'];
     local state = if english then 'English' else 'Chinese';
     local hints = if english then Phone.englishLetterHints else Phone.letterHints;
@@ -53,7 +55,8 @@ local names(row) = [name(c) for c in std.stringChars(row)];
       };
     Style.merge([
       Phone.base(isPortrait, mainControls=true, english=english), Hold.shared,
-      { keyboardLayout: [
+      { keyboardStyle+: { insets: { left: mainKeyboard.sidePadding, right: mainKeyboard.sidePadding } },
+        keyboardLayout: [
         Layout.row(names('qwertyuiop')), Layout.row(names('asdfghjkl')),
         Layout.row(['shiftButton'] + names('zxcvbnm') + ['backspaceButton']),
         Layout.row(['symbolicButton', 'numericButton', 'chineseCommaButton', 'spaceButton',

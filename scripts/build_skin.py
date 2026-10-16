@@ -261,6 +261,18 @@ def validate_image_resources(doc, folder):
                     and rect['x'] + rect['width'] <= width and rect['y'] + rect['height'] <= height, f'{name}: sprite outside image')
 
 
+def keyboard_content_size(doc, width):
+    insets = doc['keyboardStyle'].get('insets', {})
+    require(isinstance(insets, dict), 'invalid keyboard insets')
+    edges = {edge: insets.get(edge, 0) for edge in ('left', 'right', 'top', 'bottom')}
+    require(all(type(value) in (int, float) and math.isfinite(value) and value >= 0 for value in edges.values()),
+            'invalid keyboard insets')
+    content_width = width - edges['left'] - edges['right']
+    content_height = doc['keyboardHeight'] - edges['top'] - edges['bottom']
+    require(content_width > 0 and content_height > 0, 'keyboard insets consume content area')
+    return content_width, content_height
+
+
 def validate_skin(skin=SKIN):
     config = json.loads((skin / "config.yaml").read_text(encoding="utf-8"))
     required = set()
@@ -282,36 +294,40 @@ def validate_skin(skin=SKIN):
                 widths = [768, 1024] if is_pad else ([568, 680, 844] if "Landscape" in filename else [320, 390, 430])
                 for width in widths:
                     for candidate in ([doc, split_document(doc)] if is_pad else [doc]):
-                        layout_rectangles(candidate, "keyboardLayout", width, candidate["keyboardHeight"])
+                        content_width, content_height = keyboard_content_size(candidate, width)
+                        layout_rectangles(candidate, "keyboardLayout", content_width, content_height)
             except (SkinError, KeyError, TypeError, ValueError) as error:
                 raise SkinError(f"{scheme}/{filename}: {error}") from error
     require((skin / "demo.png").is_file(), "missing demo.png")
     return len(required) * 2
 
 
-def compile_skin(binary):
-    completed = subprocess.run([str(binary), str(SKIN / "jsonnet" / "main.jsonnet")], capture_output=True, text=True, encoding="utf-8")
+def compile_skin(binary, skin=SKIN):
+    completed = subprocess.run([str(binary), str(skin / "jsonnet" / "main.jsonnet")], capture_output=True, text=True, encoding="utf-8")
     require(completed.returncode == 0, completed.stderr)
     output = json.loads(completed.stdout)
     for relative, contents in output.items():
-        path = (SKIN / relative).resolve()
-        require(path.is_relative_to(SKIN) and path.suffix == ".yaml", f"invalid output path {relative}")
+        path = (skin / relative).resolve()
+        require(path.is_relative_to(skin.resolve()) and path.suffix == ".yaml", f"invalid output path {relative}")
         require(isinstance(contents, str), f"{relative}: output is not text")
         json.loads(contents)
     for relative, contents in output.items():
-        path = SKIN / relative
+        path = skin / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(contents + "\n", encoding="utf-8")
 
 
-def package_skin(output):
+def package_skin(output, skin=SKIN):
+    name = json.loads((skin / 'config.yaml').read_text(encoding='utf-8')).get('name')
+    require(isinstance(name, str) and name.strip() and name not in ('.', '..')
+            and not any(character in name for character in ('/', '\\', '\0')), 'invalid skin name')
     output.parent.mkdir(parents=True, exist_ok=True)
-    paths = [SKIN / "config.yaml", SKIN / "README.md", SKIN / "demo.png"]
-    paths += sorted(path for folder in ("light", "dark", "jsonnet") for path in (SKIN / folder).rglob("*") if path.is_file())
+    paths = [skin / "config.yaml", skin / "README.md", skin / "demo.png"]
+    paths += sorted(path for folder in ("light", "dark", "jsonnet") for path in (skin / folder).rglob("*") if path.is_file())
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in paths:
             # One UTF-8 skin-name directory is required by the import format.
-            info = zipfile.ZipInfo("扁平灰白/" + path.relative_to(SKIN).as_posix(), (1980, 1, 1, 0, 0, 0))
+            info = zipfile.ZipInfo(name + '/' + path.relative_to(skin).as_posix(), (1980, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
             archive.writestr(info, path.read_bytes())

@@ -127,13 +127,14 @@ def icon(draw, name, center, size, color):
 
 
 def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False, preedit='',
-                    shift=False, caps_locked=False, after_language_change=False, english_candidates_enabled=True):
+                    shift=False, caps_locked=False, after_language_change=False, english_candidates_enabled=True, skin=None):
+    skin = SKIN if skin is None else Path(skin)
     # Language now chooses a complete keyboard file, not a notification overlay.
     if name.startswith('pinyin') and ascii_mode:
         name = name.replace('pinyin', 'alphabetic', 1)
     if name.startswith('alphabetic'):
         ascii_mode = not english_candidates_enabled
-    doc = json.loads((SKIN / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
+    doc = json.loads((skin / scheme / (name + '.yaml')).read_text(encoding='utf-8'))
     if 'symbolCategoryData' in doc and category not in doc['symbolCategoryData']:
         raise ValueError(f'Unknown symbol category: {category}')
     total = doc['preeditHeight'] + doc['toolbarHeight'] + doc['keyboardHeight']
@@ -147,7 +148,7 @@ def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False
             x, y, w, h = inset(rect, node.get('insets', {}))
             if node.get('buttonStyleType') == 'fileImage':
                 resource = node.get('highlightImage', node['normalImage']) if highlighted else node['normalImage']
-                folder = SKIN / scheme / 'resources'
+                folder = skin / scheme / 'resources'
                 descriptor = json.loads((folder / (resource['file'] + '.yaml')).read_text(encoding='utf-8'))
                 bounds = descriptor[resource['image']]['rect']
                 atlas = Image.open(folder / (resource['file'] + '.png')).convert('RGBA')

@@ -9,6 +9,7 @@ local iPhoneNumeric = import 'Keyboards/iPhoneNumeric.libsonnet';
 local iPhonePinyin = import 'Keyboards/iPhonePinyin.libsonnet';
 local iPhoneSymbolic = import 'Keyboards/iPhoneSymbolic.libsonnet';
 local iPhoneSchemes = import 'Keyboards/iPhoneSchemes.libsonnet';
+local mainKeyboard = import 'Constants/MainKeyboard.json';
 
 // ===== 产物矩阵：文件名 -> 键盘定义 =====
 // 每份定义都会生成 light/ 与 dark/ 两个文件，两者的差别只在色值上，
@@ -37,7 +38,7 @@ local keyboards = {
 // iPad 上没有单独的符号页：iPad 的数字页一页就放下了 iPhone 上两页的内容，
 // 所以 symbolic 在 iPad 上直接指回拼音页（按 `123` 走数字页，不存在第二页）。
 local config = {
-  name: '扁平灰白',
+  name: '扁平灰白' + (if mainKeyboard.sidePadding == 0 then '' else '·留白' + std.toString(mainKeyboard.sidePadding) + 'pt'),
   pinyin: {
     iPhone: { portrait: 'pinyinPortrait', landscape: 'pinyinLandscape' },
     iPad: {
