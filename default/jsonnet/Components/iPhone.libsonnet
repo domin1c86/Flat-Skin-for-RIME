@@ -112,9 +112,9 @@ local text(label, extra={}) = Style.text({
       phoneAsciiNotification: optionNotification(Theme.systemBackgroundName, languageForeground, Keys.asciiModeButton.action),
       phoneChineseCommaLabel: punctuationIcon('comma'),
       phoneEnglishCommaLabel: text(',', { fontSize: fonts.keyLabel }),
-      [if english == true then 'phoneCandidatesOnLabel' else null]: text('词', { fontSize: 9, center: { x: 0.5, y: 0.18 },
+      [if english == true then 'phoneCandidatesOnLabel' else null]: text('词', { fontSize: 9, center: { x: 0.5, y: 0.22 },
         normalColor: colors.blueButtonBackgroundColor, highlightColor: colors.blueButtonBackgroundColor }),
-      [if english == true then 'phoneCandidatesOffLabel' else null]: text('词', { fontSize: 9, center: { x: 0.5, y: 0.18 },
+      [if english == true then 'phoneCandidatesOffLabel' else null]: text('词', { fontSize: 9, center: { x: 0.5, y: 0.22 },
         normalColor: colors.swipeHintColor, highlightColor: colors.swipeHintColor }),
       [if english == true then 'phoneCandidateToggleNotification' else null]: englishComma + {
         notificationType: 'rime', rimeNotificationType: 'optionChanged',

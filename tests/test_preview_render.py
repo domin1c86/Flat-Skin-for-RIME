@@ -68,7 +68,7 @@ class ClassificationHighlightTests(unittest.TestCase):
                                     self.assertEqual(doc[refs[1]]['text'], expected)
                                     for key in ('size', 'bounds', 'backgroundStyle', 'action', 'uppercasedStateAction'):
                                         self.assertEqual(node.get(key), base.get(key))
-                                    self.assertEqual(doc[refs[0]]['center'], {'x': .5, 'y': .18})
+                                    self.assertEqual(doc[refs[0]]['center'], {'x': .5, 'y': .22})
                                     self.assertEqual(doc[refs[1]]['center'], {'x': .5, 'y': .59})
 
     def test_letter_pixels_match_before_and_after_language_changes(self):

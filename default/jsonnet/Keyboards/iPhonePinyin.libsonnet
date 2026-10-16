@@ -26,7 +26,7 @@ local names(row) = [name(c) for c in std.stringChars(row)];
         swipeUpAction: { symbol: hints[c] },
         layers: [
           { name: n + 'SwipeLabel', params: { text: hints[c], fontSize: 9,
-              center: { x: 0.5, y: 0.18 }, foregroundNormalColor: colors.swipeHintColor,
+              center: { x: 0.5, y: 0.22 }, foregroundNormalColor: colors.swipeHintColor,
               foregroundHighlightColor: colors.swipeHintColor } },
           { name: n + 'LetterLabel', params: { text: c, fontSize: fonts.keyLabel,
               center: { x: 0.5, y: 0.59 } } },
