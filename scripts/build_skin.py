@@ -36,7 +36,8 @@ CELL_TYPES = {"button", "symbols", "classifiedSymbols", "subClassifiedSymbols", 
 STANDARD_ACTIONS = {"space", "enter", "tab", "shift", "backspace", "dismissKeyboard", "nextKeyboard",
                     "returnPrimaryKeyboard", "returnLastKeyboard", "symbolicKeyboardLockStateToggle", "none"}
 SHORTCUTS = {"#中英切换", "#次选上屏", "#showPasteboardView", "#toggleScriptView", "#keyboardMenu",
-             "#toggleSplitState", "#方案切换", "#candidatesBarStateToggle", "#verticalCandidatesPageUp", "#verticalCandidatesPageDown"}
+             "#toggleSplitState", "#方案切换", "#candidatesBarStateToggle", "#verticalCandidatesPageUp", "#verticalCandidatesPageDown",
+             "#重输", "#deleteText"}
 
 
 class SkinError(ValueError):
