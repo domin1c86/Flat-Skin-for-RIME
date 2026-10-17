@@ -90,6 +90,26 @@ class ValidatorRegressionTests(unittest.TestCase):
         with self.assertRaisesRegex(SkinError, 'missing reference missingHoldOption'):
             validate_document(doc)
 
+    def test_empty_grid_anchor_is_allowed_but_empty_selection_is_not(self):
+        doc = load('pinyinPortrait')
+        grid = doc[doc['qButton']['hintSymbolsGridStyle']]
+        grid['symbolRows'].append([None])
+        grid['anchor'] = {'row': 1, 'col': 0}
+        del grid['selected']
+        validate_document(doc)
+        grid['selected'] = {'row': 1, 'col': 0}
+        with self.assertRaisesRegex(SkinError, 'invalid selected cell'):
+            validate_document(doc)
+
+    def test_grid_anchor_still_requires_an_in_bounds_integer_coordinate(self):
+        for anchor in ({'row': 1, 'col': 0}, {'row': 0, 'col': 3},
+                       {'row': -1, 'col': 0}, {'row': True, 'col': 0}):
+            doc = load('pinyinPortrait')
+            grid = doc[doc['qButton']['hintSymbolsGridStyle']]
+            grid['anchor'] = anchor
+            with self.subTest(anchor=anchor), self.assertRaisesRegex(SkinError, 'invalid anchor cell'):
+                validate_document(doc)
+
     def test_mixed_layout_fails(self):
         self.doc['keyboardLayout'].append({'Cell': 'qButton'})
         with self.assertRaisesRegex(SkinError, 'mixed/unknown'):

@@ -77,18 +77,21 @@ class DeleteAllProbePackageTests(unittest.TestCase):
                         self.assertEqual(document['backspaceButton']['action'], 'backspace')
                         self.assertNotIn('swipeUpAction', document['backspaceButton'])
                         grid = document['deleteAllProbeGrid']
-                        self.assertEqual(grid['symbolRows'], [['deleteAllProbeOption'], ['deleteAllProbeCancel']])
-                        self.assertEqual(grid['selected'], {'row': 1, 'col': 0})
-                        self.assertEqual(grid['anchor'], grid['selected'])
+                        self.assertEqual(grid['symbolRows'], [['deleteAllProbeOption'], [None]])
+                        self.assertNotIn('selected', grid)
+                        self.assertNotIn('backgroundStyle', grid)
+                        self.assertEqual(grid['anchor'], {'row': 1, 'col': 0})
                         self.assertEqual(grid['moveStep']['vertical'], 40)
-                        self.assertEqual(grid['moveThreshold'], 16)
+                        self.assertEqual(grid['moveThreshold'], grid['moveStep']['vertical'] / 2)
                         self.assertTrue(grid['checkIfOverflowsParentHeight'])
-                        cancel = document['deleteAllProbeCancel']
-                        self.assertEqual(cancel['action'], 'none')
-                        self.assertFalse(any(field.endswith('Action') for field in cancel))
-                        self.assertEqual(document[cancel['foregroundStyle']]['text'], '取消')
                         option = document['deleteAllProbeOption']
-                        self.assertEqual(document[option['foregroundStyle']]['text'], '删除全部')
+                        label = document[option['foregroundStyle']]
+                        self.assertEqual(label['text'], '删除全部')
+                        self.assertEqual(label['highlightColor'], '#FFFFFF')
+                        self.assertEqual(option['backgroundStyle'], 'phoneHoldBackground')
+                        highlight = document[grid['selectedBackgroundStyle']]
+                        self.assertEqual(highlight['normalColor'], '#D32F2F')
+                        self.assertEqual(highlight['highlightColor'], '#D32F2F')
                         self.assertEqual(semantic_action(option['action']), {
                             'combine': [{'shortcut': '#重输'}, {'shortcut': '#deleteText'}]})
                         self.assertEqual(option['action']['combine'][0], CANCEL)
@@ -98,8 +101,8 @@ class DeleteAllProbePackageTests(unittest.TestCase):
                         for name, node in original.items():
                             self.assertEqual(document[name], node, name)
                         self.assertEqual(set(document) - set(original), {
-                            'deleteAllProbeGrid', 'deleteAllProbeOption', 'deleteAllProbeCancel',
-                            'deleteAllProbeLabel', 'deleteAllProbeCancelLabel'})
+                            'deleteAllProbeGrid', 'deleteAllProbeOption',
+                            'deleteAllProbeLabel', 'deleteAllProbeSelectedBackground'})
 
     def test_all_other_layouts_and_resources_are_unchanged(self):
         for path, contents in self.files.items():

@@ -1,7 +1,6 @@
 local standard = import 'main.standard.jsonnet';
 local Style = import 'Components/Style.libsonnet';
 local ContextActions = import 'Components/ContextActions.libsonnet';
-local colors = import 'Constants/Colors.libsonnet';
 local targets = [
   theme + '/' + layout + orientation + '.yaml'
   for theme in ['light', 'dark']
@@ -10,35 +9,29 @@ local targets = [
 ];
 local patch = ContextActions.apply({
   deleteAllProbeGrid: {
-    symbolRows: [['deleteAllProbeOption'], ['deleteAllProbeCancel']],
+    symbolRows: [['deleteAllProbeOption'], [null]],
     size: { width: 96, height: 40 },
     spacing: { horizontal: 0, vertical: 0 },
     insets: { top: 4, bottom: 4, left: 4, right: 4 },
     anchor: { row: 1, col: 0 },
-    selected: { row: 1, col: 0 },
-    offset: { x: 0, y: -48 },
+    offset: { x: 0, y: -8 },
     moveStep: { horizontal: 96, vertical: 40 },
-    moveThreshold: 16,
+    moveThreshold: 20,
     checkIfOverflowsParentHeight: true,
-    backgroundStyle: 'phoneHoldBackground',
-    selectedBackgroundStyle: 'phoneHoldSelectedBackground',
+    selectedBackgroundStyle: 'deleteAllProbeSelectedBackground',
   },
   deleteAllProbeOption: {
     type: 'button',
+    backgroundStyle: 'phoneHoldBackground',
     foregroundStyle: 'deleteAllProbeLabel',
     action: { combine: [{ shortcut: '#重输' }, { shortcut: '#deleteText' }] },
   },
-  deleteAllProbeCancel: {
-    type: 'button', foregroundStyle: 'deleteAllProbeCancelLabel', action: 'none',
-  },
+  deleteAllProbeSelectedBackground: Style.geometry({
+    normalColor: '#D32F2F', highlightColor: '#D32F2F', cornerRadius: 8.5,
+  }),
   deleteAllProbeLabel: Style.text({
     text: '删除全部', fontSize: 16,
     normalColor: { light: '#C42B2B', dark: '#FF8585' },
-    highlightColor: '#FFFFFF',
-  }),
-  deleteAllProbeCancelLabel: Style.text({
-    text: '取消', fontSize: 16,
-    normalColor: colors.standardCalloutForegroundColor,
     highlightColor: '#FFFFFF',
   }),
 });

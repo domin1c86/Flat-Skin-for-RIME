@@ -145,8 +145,10 @@ def validate_document(doc):
                     cell = node[field]
                     require(isinstance(cell, dict) and type(cell.get("row")) is int and type(cell.get("col")) is int,
                             f"{name}: invalid {field} cell")
-                    r, c = cell["row"], cell["col"]
-                    require(0 <= r < len(rows) and 0 <= c < len(rows[r]) and bool(rows[r][c]), f"{name}: invalid {field} cell")
+                    row_index, column_index = cell["row"], cell["col"]
+                    require(0 <= row_index < len(rows) and 0 <= column_index < len(rows[row_index])
+                            and (field == "anchor" or bool(rows[row_index][column_index])),
+                            f"{name}: invalid {field} cell")
             if "moveStep" in node:
                 step = node["moveStep"]
                 require(isinstance(step, dict) and all(type(step.get(axis)) in (int, float) and step[axis] >= 1 for axis in ("horizontal", "vertical")),
