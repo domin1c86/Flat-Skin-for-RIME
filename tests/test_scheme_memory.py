@@ -15,6 +15,45 @@ MODULE = ROOT / 'scripts/rime/skin_scheme_memory.lua'
 
 @unittest.skipUnless(AVAILABLE and MODULE.is_file(), 'user-file Lua fixture/lupa unavailable')
 class SchemeMemoryTests(unittest.TestCase):
+    def test_initialization_does_not_force_language_or_replace_host_schema(self):
+        for schema in ('double_pinyin_flypy', 'rime_mint', 'melt_eng'):
+            self.setUp()
+            self.run_lua(f'''
+                stored='rime_mint'; stored_enabled=false
+                local env=make_env('{schema}'); memory.init(env)
+                assert(env.engine.schema.schema_id=='{schema}')
+                assert(switches==0 and commits==0)
+            ''')
+
+    def test_fresh_module_restores_both_persisted_preferences(self):
+        self.run_lua('''
+            local env=make_env('rime_mint_flypy'); memory.init(env)
+            memory.func(key(),env); memory.init(env)
+            local toggle=key();toggle.keycode=0xffc8
+            assert(memory.func(toggle,env)==1)
+            assert(stored=='rime_mint_flypy' and stored_enabled==false)
+        ''')
+        self.lua.globals().memory = self.lua.execute(MODULE.read_text(encoding='utf-8'))
+        self.run_lua('''
+            local before=writes
+            local env=make_env('melt_eng');memory.init(env)
+            assert(env.engine.context.ascii_mode==true and writes==before)
+            assert(memory.func(key(),env)==1)
+            assert(env.engine.schema.schema_id=='rime_mint_flypy')
+            assert(env.engine.context.ascii_mode==false)
+        ''')
+
+    def test_unreserved_modifier_combinations_do_not_switch(self):
+        self.run_lua('''
+            local env=make_env('melt_eng');memory.init(env)
+            for _,modifier in ipairs({'alt','super','ctrl','shift'}) do
+                local chord=key()
+                chord[modifier]=function() return modifier=='alt' or modifier=='super' end
+                assert(memory.func(chord,env)==2)
+            end
+            assert(switches==0 and commits==0)
+        ''')
+
     def test_direct_toggle_cancels_unselected_prediction(self):
         self.run_lua('''
             local env=make_env('double_pinyin_flypy');memory.init(env)
