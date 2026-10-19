@@ -9,7 +9,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from audit_symbol_catalog import CATALOG, REPORT, check_skin_catalog, load_catalog, render_report
+from audit_symbol_catalog import REPORT, check_skin_catalog, load_catalog, render_report
 from build_skin import SkinError
 
 

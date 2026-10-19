@@ -317,7 +317,7 @@ def compile_skin(binary, skin=SKIN):
     for relative, contents in output.items():
         path = skin / relative
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(contents + "\n", encoding="utf-8")
+        path.write_text(contents + "\n", encoding="utf-8", newline="\n")
 
 
 def package_skin(output, skin=SKIN):

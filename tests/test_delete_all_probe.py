@@ -1,4 +1,5 @@
 import hashlib
+import io
 import json
 from pathlib import Path
 import shutil
@@ -60,6 +61,15 @@ class DeleteAllProbePackageTests(unittest.TestCase):
         self.assertEqual(self.files['jsonnet/main.standard.jsonnet'], (SKIN / 'jsonnet/main.jsonnet').read_bytes())
         self.assertEqual(self.files['jsonnet/main.jsonnet'], (ROOT / 'experiments/delete-all/main.jsonnet').read_bytes())
         self.assertEqual(fingerprints(), self.before)
+
+    def test_demo_and_readme_match_the_probe_padding(self):
+        from PIL import Image
+        image = Image.open(io.BytesIO(self.files['demo.png']))
+        document = json.loads(self.files['light/pinyinPortrait.yaml'])
+        height = sum(document[field] for field in ('preeditHeight', 'toolbarHeight', 'keyboardHeight'))
+        self.assertEqual(image.size, (390 * 3 * 2, height * 3))
+        self.assertIn('每侧额外留白 12pt', self.files['README.md'].decode('utf-8'))
+        self.assertNotEqual(self.files['demo.png'], (SKIN / 'demo.png').read_bytes())
 
     def test_primary_keys_keep_tap_and_require_hold_selection(self):
         for theme in ('light', 'dark'):

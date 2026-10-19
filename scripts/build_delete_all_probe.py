@@ -6,7 +6,10 @@ import shutil
 import sys
 import tempfile
 
+from PIL import Image
+
 from build_skin import ROOT, SKIN, SkinError, compile_skin, package_skin, require, validate_skin
+from render_skin_preview import render_keyboard
 
 EXPERIMENT = ROOT / 'experiments/delete-all'
 
@@ -26,7 +29,14 @@ def build_probe(output_dir, binary, padding=0):
         settings.write_text(json.dumps({'sidePadding': padding}, indent=2) + '\n', encoding='utf-8', newline='\n')
         compile_skin(binary, skin)
         guide = (EXPERIMENT / 'README.md').read_text(encoding='utf-8')
-        (skin / 'README.md').write_text(guide, encoding='utf-8', newline='\n')
+        heading = f'本验证版主键盘每侧额外留白 {padding}pt，左右相同。\n\n'
+        (skin / 'README.md').write_text(heading + guide, encoding='utf-8', newline='\n')
+        light = render_keyboard('pinyinPortrait', 'light', skin=skin)
+        dark = render_keyboard('pinyinPortrait', 'dark', skin=skin)
+        demo = Image.new('RGB', (light.width * 2, light.height), '#f7f7f5')
+        demo.paste(light, (0, 0))
+        demo.paste(dark, (light.width, 0))
+        demo.save(skin / 'demo.png', optimize=True)
         count = validate_skin(skin)
         name = json.loads((skin / 'config.yaml').read_text(encoding='utf-8'))['name']
         output_dir.mkdir(parents=True, exist_ok=True)
