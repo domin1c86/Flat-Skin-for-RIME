@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import sys
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -20,6 +21,26 @@ from build_skin import layout_rectangles
 
 @unittest.skipUnless(HAS_PILLOW, 'Pillow is optional; install it to test preview pixels')
 class ClassificationHighlightTests(unittest.TestCase):
+    def test_offscreen_collection_entries_do_not_paint_outside_viewports(self):
+        original_loads = json.loads
+        for scheme in ('light', 'dark'):
+            for orientation in ('Portrait', 'Landscape'):
+                for kind, category in (('numeric', '常用'), ('symbolic', '日文')):
+                    name = kind + orientation
+                    complete = render_keyboard(name, scheme, category=category)
+
+                    def visible_only(source):
+                        document = original_loads(source)
+                        if 'numericOperatorData' in document:
+                            document['numericOperatorData'] = document['numericOperatorData'][:4]
+                        if '日文' in document:
+                            document['日文'] = document['日文'][:20]
+                        return document
+
+                    with patch('render_skin_preview.json.loads', side_effect=visible_only):
+                        clipped = render_keyboard(name, scheme, category=category)
+                    self.assertEqual(complete.tobytes(), clipped.tobytes())
+
     def test_short_callout_case_swipe_priority_and_notification_cycles(self):
         from render_callout_preview import callout_foreground, render_callout
         catalog = json.loads((ROOT / 'default/jsonnet/Constants/LetterSymbols.json').read_text(encoding='utf-8'))
@@ -130,19 +151,20 @@ class ClassificationHighlightTests(unittest.TestCase):
                 rects = dict(layout_rectangles(doc, 'keyboardLayout', width, doc['keyboardHeight']))
                 x, y, w, h = inset(rects['symbolCategories'], doc['symbolCategories']['insets'])
                 y += doc['preeditHeight'] + doc['toolbarHeight']
-                row_height = h / len(doc['symbolCategoryData'])
+                row_height = h / doc['symbolCategories']['maximumRow']
                 highlight = doc['symbolCategoryHighlight']
                 color = ImageColor.getrgb(highlight['highlightColor'])
                 for index, category in enumerate(doc['symbolCategoryData']):
                     with self.subTest(scheme=scheme, orientation=orientation, category=category):
                         image = render_keyboard(name, scheme, width=width, category=category)
-                        hx, hy, hw, hh = inset((x, y + row_height * index, w, row_height), highlight['insets'])
+                        visible_index = min(index, doc['symbolCategories']['maximumRow'] - 1)
+                        hx, hy, hw, hh = inset((x, y + row_height * visible_index, w, row_height), highlight['insets'])
                         # A square full-cell highlight would color the top-left corner.
                         self.assertNotEqual(image.getpixel((round(hx * SCALE), round(hy * SCALE))), color)
                         # Just below the top edge, away from text, must be visibly selected.
                         self.assertEqual(image.getpixel((round((hx + hw / 2) * SCALE), round((hy + 1) * SCALE))), color)
                         for other in range(3):
-                            if other != index:
+                            if other != visible_index:
                                 sample = (round((x + w / 2) * SCALE), round((y + row_height * other + 3) * SCALE))
                                 self.assertNotEqual(image.getpixel(sample), color)
 

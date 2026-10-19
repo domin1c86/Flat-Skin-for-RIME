@@ -8,6 +8,7 @@ local Layout = import '../Components/Layout.libsonnet';
 local Phone = import '../Components/iPhone.libsonnet';
 local Style = import '../Components/Style.libsonnet';
 local Theme = import '../Components/Theme.libsonnet';
+local catalog = import '../Constants/SymbolCatalog.json';
 local column(rows, style=null) = Layout.stack('VStack', rows, style);
 local middleWidth = { size: { width: '2.1/9.7' } };
 local sideWidth = { size: { width: '1.7/9.7' } };
@@ -36,7 +37,7 @@ local digits = ['oneButton', 'twoButton', 'threeButton', 'fourButton', 'fiveButt
           backgroundStyle: Theme.systemBackgroundName, cellStyle: 'numericOperatorCell',
           insets: insets, displaySeparatorLine: false,
         },
-        numericOperatorData: ['+', '-', '*', '/'],
+        numericOperatorData: std.stringChars(catalog.numericOperators),
         numericOperatorCell: {
           backgroundStyle: 'numericOperatorHighlight', foregroundStyle: 'numericOperatorLabel',
         },

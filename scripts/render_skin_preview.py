@@ -198,14 +198,19 @@ def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False
             rows, cols = node['maximumRow'], 1
         else:
             return
+        if node['type'] == 'classifiedSymbols' and category in values:
+            start = max(0, min(values.index(category) - rows + 1, len(values) - rows))
+            values = values[start:]
+        values = values[:rows * cols]
         x, y, w, h = inset(rect, node.get('insets', {}))
         cell_style = doc[node['cellStyle']]
-        foreground = dict(doc[cell_style['foregroundStyle']])
         for i, label in enumerate(values):
             cx, cy = x + (i % cols) * w / cols, y + (i // cols) * h / rows
+            style = doc[label.get('styleName', node['cellStyle'])] if isinstance(label, dict) else cell_style
+            foreground = doc[style['foregroundStyle']]
             label = label if isinstance(label, str) else label['label']
             is_selected = node['type'] == 'classifiedSymbols' and label == category
-            paint(cell_style.get('backgroundStyle'), (cx, cy, w / cols, h / rows), highlighted=is_selected)
+            paint(style.get('backgroundStyle'), (cx, cy, w / cols, h / rows), highlighted=is_selected)
             if node.get('displaySeparatorLine'):
                 separator = node['separatorLineColor']
                 if i % cols:
@@ -234,7 +239,8 @@ def render_keyboard(name, scheme, width=390, category='常用', ascii_mode=False
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=SKIN / 'demo.png')
-    parser.add_argument('--category', choices=('常用', '中文', '英文'), default='常用', help='selected category shown in the symbol diagram')
+    catalog = json.loads((SKIN / 'jsonnet/Constants/SymbolCatalog.json').read_text(encoding='utf-8'))
+    parser.add_argument('--category', choices=[item['label'] for item in catalog['categories']], default='常用', help='selected category shown in the symbol diagram')
     parser.add_argument('--language-states', action='store_true', help='compare Chinese, English and English Shift after language notifications')
     args = parser.parse_args()
     gap, margin, title_height = 18, 24, 52

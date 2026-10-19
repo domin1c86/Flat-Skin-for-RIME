@@ -80,21 +80,25 @@
     .key[aria-pressed="true"] { color:var(--accent); }
     .key.system.selected { background:var(--accent); color:var(--on-accent); }
     .numeric-keys { grid-template-columns:1.7fr 6.3fr 1.7fr; grid-template-rows:3fr 1fr; gap:calc(6 * var(--u)); }
-    .operators { display:grid; grid-template-rows:repeat(4,1fr); background:var(--system); border-radius:calc(var(--radius) * var(--u)); box-shadow:0 calc(1 * var(--u)) 0 var(--edge); overflow:hidden; }
+    .scroll-list { min-height:0; overflow-x:hidden; overflow-y:auto; overscroll-behavior-y:contain; touch-action:pan-y; scrollbar-width:none; }
+    .scroll-list::-webkit-scrollbar { display:none; }
+    .scroll-list .key { touch-action:pan-y; }
+    .operators { display:grid; grid-auto-rows:25%; align-content:start; background:var(--system); border-radius:calc(var(--radius) * var(--u)); box-shadow:0 calc(1 * var(--u)) 0 var(--edge); }
     .operators .key { background:transparent; box-shadow:none; }
     .digits { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(0,1fr)); gap:calc(6 * var(--u)); }
     .numeric-side { display:grid; grid-template-rows:repeat(3,minmax(0,1fr)); gap:calc(6 * var(--u)); }
     .numeric-bottom { grid-column:1 / -1; display:grid; grid-template-columns:1.7fr 2.1fr 2.1fr 2.1fr 1.7fr; gap:calc(6 * var(--u)); }
     .symbol-keys { grid-template-columns:1.6fr 8.4fr; gap:calc(6 * var(--u)); }
     .symbol-sidebar { display:grid; grid-template-rows:3fr 1fr 1fr; gap:calc(6 * var(--u)); min-height:0; }
-    .categories { background:var(--system); display:grid; grid-template-rows:repeat(3,1fr); border-radius:calc(var(--radius) * var(--u)); overflow:hidden; box-shadow:0 calc(1 * var(--u)) 0 var(--edge); }
+    .categories { background:var(--system); display:grid; grid-auto-rows:calc(100% / 3); align-content:start; border-radius:calc(var(--radius) * var(--u)); box-shadow:0 calc(1 * var(--u)) 0 var(--edge); }
     .categories .key { border-radius:0; box-shadow:none; background:transparent; }
     .categories .key::before { content:""; position:absolute; inset:calc(2 * var(--u)) calc(3 * var(--u)); border-radius:calc(var(--radius) * var(--u)); pointer-events:none; }
     .categories .key .legend { position:relative; z-index:1; }
     .categories .key.selected,.categories .key:active,.categories .key.is-pressed { background:transparent; color:var(--foreground); }
     .categories .key.selected::before,.categories .key:active::before,.categories .key.is-pressed::before { background:var(--system-pressed); }
-    .symbol-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(5,minmax(0,1fr)); gap:1px; background:var(--separator); overflow:hidden; border-radius:calc(var(--radius) * var(--u)); }
+    .symbol-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); grid-auto-rows:calc(20% - .8px); align-content:start; gap:1px; background:var(--separator); border-radius:calc(var(--radius) * var(--u)); }
     .symbol-grid .key { border-radius:0; box-shadow:none; font-size:calc(20 * var(--u)); }
+    .symbol-grid .short-text { font-size:calc(12 * var(--u)); }
     .home-area { height:calc(34 * var(--u)); display:grid; align-items:end; justify-content:center; padding-bottom:calc(8 * var(--u)); }
     .home-indicator { width:calc(120 * var(--u)); height:calc(4 * var(--u)); border-radius:99px; background:var(--foreground); opacity:.3; }
     .feedback { position:absolute; top:calc(1 * var(--u)); right:calc(9 * var(--u)); font-size:calc(11 * var(--u)); color:var(--secondary); pointer-events:none; }
@@ -219,11 +223,7 @@
     function hintFor(letter) {
       return Array.from(letterSymbols[state.language==='zh'?'chinese':'english'])[letterSymbols.letters.indexOf(letter)];
     }
-    const symbols = {
-      common:['《','，','。','？','！','、','…','(',')','》','“','”','@','#','.','/','.com','~','—',':'],
-      chinese:['，','。','？','！','、','；','：','…','（','）','《','》','“','”','‘','’','【','】','「','」'],
-      english:[',','.','?','!',';',':',"'",'"','(',')','[',']','{','}','@','#','+','-','_','/']
-    };
+    const symbolCatalog = {"numericOperators": "+-\\*/%:#=<>;()[]{}&|\\\\^\\_\\~\\`@?!", "categories": [{"id": "common", "label": "常用", "symbols": ["《", "，", "。", "？", "！", "、", "…", "(", ")", "》", "“", "”", "@", "#", ".", "/", ".com", "~", "—", ":"]}, {"id": "chinese", "label": "中文", "symbols": ["，", "。", "？", "！", "、", "；", "：", "…", "—", "·", "“", "”", "‘", "’", "（", "）", "《", "》", "〈", "〉", "【", "】", "〔", "〕", "「", "」", "『", "』", "﹏", "～", "￥", "＃", "％", "＆", "＊", "＠"]}, {"id": "english", "label": "英文", "symbols": ["!", "\"", "#", "$", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "@", "[", "\\", "]", "^", "_", "`", "{", "|", "}", "~"]}, {"id": "internet", "label": "网络", "symbols": ["@", "#", "/", "\\", "_", "-", ".", ":", "~", "&", "=", "?", "*", "%", "+", ".com", ".cn", ".net", ".org", ".edu", ".gov", ".io", "www.", "http://", "https://", "ftp://", "://"]}, {"id": "math", "label": "数学", "symbols": ["+", "−", "×", "÷", "=", "≠", "≈", "≡", "<", ">", "≤", "≥", "±", "∓", "%", "‰", "‱", "∞", "√", "∛", "∜", "∑", "∏", "∫", "∬", "∭", "∮", "∂", "∆", "∇", "∈", "∉", "∋", "⊂", "⊃", "⊆", "⊇", "∪", "∩", "∅", "∧", "∨", "¬", "∀", "∃", "∄", "∝", "∠", "⊥", "∥", "π"]}, {"id": "brackets", "label": "括号", "symbols": ["(", ")", "[", "]", "{", "}", "<", ">", "（", "）", "［", "］", "｛", "｝", "〈", "〉", "《", "》", "「", "」", "『", "』", "【", "】", "〔", "〕", "〖", "〗", "〘", "〙", "〚", "〛"]}, {"id": "numbers", "label": "序号", "symbols": ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪", "⑫", "⑬", "⑭", "⑮", "⑯", "⑰", "⑱", "⑲", "⑳", "⑴", "⑵", "⑶", "⑷", "⑸", "⑹", "⑺", "⑻", "⑼", "⑽", "⑾", "⑿", "⒀", "⒁", "⒂", "⒃", "⒄", "⒅", "⒆", "⒇", "㈠", "㈡", "㈢", "㈣", "㈤", "㈥", "㈦", "㈧", "㈨", "㈩", "Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ", "Ⅹ", "Ⅺ", "Ⅻ", "ⅰ", "ⅱ", "ⅲ", "ⅳ", "ⅴ", "ⅵ", "ⅶ", "ⅷ", "ⅸ", "ⅹ", "ⅺ", "ⅻ"]}, {"id": "special", "label": "特殊", "symbols": ["←", "↑", "→", "↓", "↔", "↕", "↖", "↗", "↘", "↙", "⇐", "⇑", "⇒", "⇓", "⇔", "$", "¢", "£", "¤", "¥", "€", "₩", "₹", "₽", "℃", "℉", "°", "′", "″", "㎜", "㎝", "㎞", "㎡", "㎥", "㎎", "㎏", "㏄", "★", "☆", "●", "○", "■", "□", "▲", "△", "▼", "▽", "◆", "◇", "✓", "✔", "✕", "✖", "♠", "♣", "♥", "♦", "♤", "♧", "♡", "♢", "☀", "☁", "☂", "☃", "☄", "☇", "☈"]}, {"id": "greek", "label": "希腊", "symbols": ["Α", "Β", "Γ", "Δ", "Ε", "Ζ", "Η", "Θ", "Ι", "Κ", "Λ", "Μ", "Ν", "Ξ", "Ο", "Π", "Ρ", "Σ", "Τ", "Υ", "Φ", "Χ", "Ψ", "Ω", "α", "β", "γ", "δ", "ε", "ζ", "η", "θ", "ι", "κ", "λ", "μ", "ν", "ξ", "ο", "π", "ρ", "σ", "τ", "υ", "φ", "χ", "ψ", "ω", "ς"]}, {"id": "pinyin", "label": "拼音", "symbols": ["a", "ā", "á", "ǎ", "à", "e", "ē", "é", "ě", "è", "i", "ī", "í", "ǐ", "ì", "o", "ō", "ó", "ǒ", "ò", "u", "ū", "ú", "ǔ", "ù", "ü", "ǖ", "ǘ", "ǚ", "ǜ", "n", "ń", "ň", "ǹ", "m", "ḿ", "ê"]}, {"id": "bopomofo", "label": "注音", "symbols": ["ㄅ", "ㄆ", "ㄇ", "ㄈ", "ㄉ", "ㄊ", "ㄋ", "ㄌ", "ㄍ", "ㄎ", "ㄏ", "ㄐ", "ㄑ", "ㄒ", "ㄓ", "ㄔ", "ㄕ", "ㄖ", "ㄗ", "ㄘ", "ㄙ", "ㄚ", "ㄛ", "ㄜ", "ㄝ", "ㄞ", "ㄟ", "ㄠ", "ㄡ", "ㄢ", "ㄣ", "ㄤ", "ㄥ", "ㄦ", "ㄧ", "ㄨ", "ㄩ", "ˉ", "ˊ", "ˇ", "ˋ", "˙"]}, {"id": "japanese", "label": "日文", "symbols": ["ぁ", "あ", "ぃ", "い", "ぅ", "う", "ぇ", "え", "ぉ", "お", "か", "が", "き", "ぎ", "く", "ぐ", "け", "げ", "こ", "ご", "さ", "ざ", "し", "じ", "す", "ず", "せ", "ぜ", "そ", "ぞ", "た", "だ", "ち", "ぢ", "っ", "つ", "づ", "て", "で", "と", "ど", "な", "に", "ぬ", "ね", "の", "は", "ば", "ぱ", "ひ", "び", "ぴ", "ふ", "ぶ", "ぷ", "へ", "べ", "ぺ", "ほ", "ぼ", "ぽ", "ま", "み", "む", "め", "も", "ゃ", "や", "ゅ", "ゆ", "ょ", "よ", "ら", "り", "る", "れ", "ろ", "ゎ", "わ", "ゐ", "ゑ", "を", "ん", "ゔ", "ゕ", "ゖ", "ァ", "ア", "ィ", "イ", "ゥ", "ウ", "ェ", "エ", "ォ", "オ", "カ", "ガ", "キ", "ギ", "ク", "グ", "ケ", "ゲ", "コ", "ゴ", "サ", "ザ", "シ", "ジ", "ス", "ズ", "セ", "ゼ", "ソ", "ゾ", "タ", "ダ", "チ", "ヂ", "ッ", "ツ", "ヅ", "テ", "デ", "ト", "ド", "ナ", "ニ", "ヌ", "ネ", "ノ", "ハ", "バ", "パ", "ヒ", "ビ", "ピ", "フ", "ブ", "プ", "ヘ", "ベ", "ペ", "ホ", "ボ", "ポ", "マ", "ミ", "ム", "メ", "モ", "ャ", "ヤ", "ュ", "ユ", "ョ", "ヨ", "ラ", "リ", "ル", "レ", "ロ", "ヮ", "ワ", "ヰ", "ヱ", "ヲ", "ン", "ヴ", "ヵ", "ヶ", "ヷ", "ヸ", "ヹ", "ヺ", "ー", "ゝ", "ゞ", "ヽ", "ヾ"]}]};
     const panels = { menu:{title:'键盘菜单',text:'这是菜单入口的设计演示。正式皮肤将在元书中打开键盘菜单。'}, clipboard:{title:'剪贴板',text:'这是剪贴板入口的设计演示，不读取系统剪贴板。'}, script:{title:'脚本',text:'这是脚本入口的设计演示，不执行脚本。'}, scheme:{title:'方案切换',text:'这是方案切换入口的本地演示。正式皮肤会打开元书的方案列表，供你选择已安装的输入方案。'}, emoji:{title:'Emoji'} };
     const comparison = document.querySelector('.comparison');
     const dialog = document.querySelector('.zoom-dialog');
@@ -249,10 +249,11 @@
       return `<div class="keys main-keys"><div class="row row-top">${letters('qwertyuiop')}</div><div class="row row-home">${letters('asdfghjkl')}</div><div class="row row-bottom">${key('icon:'+(state.shift===2?'caps':'shift'),'shift','','system','',state.shift>0)}${letters('zxcvbnm')}${key('icon:delete','delete','','system')}</div><div class="row row-functions">${key('符号','page','symbol','system')}${key('123','page','numeric','system')}${key(state.language==='zh'?'，':',','insert',state.language==='zh'?'，':',',state.language==='zh'?'centered-punctuation':'candidate-toggle')}${key('icon:space','space')}${key(state.language==='zh'?'。':'.','insert',state.language==='zh'?'。':'.',state.language==='zh'?'centered-punctuation':'')}${key(state.language==='zh'?'中':'英','language','','system','',state.language==='en')}${key('icon:enter','enter','','system accent')}</div></div>`;
     }
     function numericKeys() {
-      return `<div class="keys numeric-keys"><div class="operators">${['+','-','*','/'].map(c=>key(c)).join('')}</div><div class="digits">${Array.from('123456789').map(c=>key(c)).join('')}</div><div class="numeric-side">${key('icon:delete','delete','','system')}${key('.','insert','.','system')}${key('@','insert','@','system')}</div><div class="numeric-bottom">${key('符号','page','symbol','system')}${key('返回','page','main','system')}${key('0')}${key('空格','space','','system')}${key('icon:enter','enter','','system accent')}</div></div>`;
+      return `<div class="keys numeric-keys"><div class="operators scroll-list" data-scroll-key="operators" aria-label="数字页符号列表">${Array.from(symbolCatalog.numericOperators).map(c=>key(c)).join('')}</div><div class="digits">${Array.from('123456789').map(c=>key(c)).join('')}</div><div class="numeric-side">${key('icon:delete','delete','','system')}${key('.','insert','.','system')}${key('@','insert','@','system')}</div><div class="numeric-bottom">${key('符号','page','symbol','system')}${key('返回','page','main','system')}${key('0')}${key('空格','space','','system')}${key('icon:enter','enter','','system accent')}</div></div>`;
     }
     function symbolKeys() {
-      return `<div class="keys symbol-keys"><div class="symbol-sidebar"><div class="categories">${[['common','常用'],['chinese','中文'],['english','英文']].map(([value,label])=>key(label,'category',value,'system'+(state.category===value?' selected':''),'',state.category===value)).join('')}</div>${key('icon:'+(state.locked?'lock':'unlock'),'lock','','system','',state.locked)}${key('返回','return','','system')}</div><div class="symbol-grid">${symbols[state.category].map(c=>key(c,'symbol',c)).join('')}</div></div>`;
+      const category=symbolCatalog.categories.find(item=>item.id===state.category);
+      return `<div class="keys symbol-keys"><div class="symbol-sidebar"><div class="categories scroll-list" data-scroll-key="categories" aria-label="符号分类">${symbolCatalog.categories.map(({id,label})=>key(label,'category',id,'system'+(state.category===id?' selected':''),'',state.category===id)).join('')}</div>${key('icon:'+(state.locked?'lock':'unlock'),'lock','','system','',state.locked)}${key('返回','return','','system')}</div><div class="symbol-grid scroll-list" data-scroll-key="symbols-${category.id}" aria-label="${escapeHTML(category.label)}符号">${category.symbols.map(c=>key(c,'symbol',c,c.length>3?'short-text':'')).join('')}</div></div>`;
     }
     function toolbar() {
       const main = state.page==='main';
@@ -280,7 +281,11 @@
       document.body.dataset.mode=state.mode;
       document.body.dataset.orientation=state.orientation;
       document.querySelectorAll('[data-setting]').forEach(button=>button.setAttribute('aria-pressed',String(state[button.dataset.setting]===button.dataset.value)));
-      document.querySelectorAll('.keyboard').forEach(element=>element.innerHTML=keyboardMarkup());
+      document.querySelectorAll('.keyboard').forEach(element=>{
+        const positions=new Map(Array.from(element.querySelectorAll('[data-scroll-key]'),list=>[list.dataset.scrollKey,list.scrollTop]));
+        element.innerHTML=keyboardMarkup();
+        element.querySelectorAll('[data-scroll-key]').forEach(list=>{list.scrollTop=positions.get(list.dataset.scrollKey)||0;});
+      });
       const fOptions=holdOptions('f');
       document.querySelector('.hold-examples').innerHTML=fOptions.map((value,index)=>`<div class="device hold-example" data-style="flat">${holdMarkup(fOptions,index)}<span class="hold-example-label">${index===0?'大写字母':index===1?'对应符号':'小写字母'} · ${escapeHTML(value)}</span></div>`).join('');
       document.querySelector('.zoom-language').textContent=state.language==='zh'?'中文 · 切换 English':'English · 切换中文';
@@ -491,18 +496,22 @@
       const active=document.activeElement;
       if(active?.matches('.editor textarea')){state.start=active.selectionStart;state.end=active.selectionEnd;}
       button.classList.add('is-pressed');
-      button.setPointerCapture(event.pointerId);
+      const scrollList=button.closest('.scroll-list');
+      if(!scrollList)button.setPointerCapture(event.pointerId);
       const unit=button.closest('.keyboard').getBoundingClientRect().width/(state.orientation==='landscape'?680:390);
-      const gesture={button,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,unit,holding:false,timer:null,
+      const gesture={button,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,unit,holding:false,timer:null,scrollList,
         candidateToggle:state.language==='en' && button.classList.contains('candidate-toggle')};
       gestures.set(event.pointerId,gesture);
       if(button.dataset.action==='letter' && !state.panel){showShort(gesture);gesture.timer=setTimeout(()=>showHold(event.pointerId),300);}
       else if(gesture.candidateToggle && !state.panel)gesture.timer=setTimeout(()=>showHold(event.pointerId),300);
-      event.preventDefault();
+      if(!scrollList)event.preventDefault();
     });
     document.addEventListener('pointermove',event=>{
       const gesture=gestures.get(event.pointerId);if(!gesture)return;
       gesture.lastX=event.clientX;gesture.lastY=event.clientY;
+      if(gesture.scrollList && Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)>10*gesture.unit){
+        suppressClick(gesture.button);clearGesture(event.pointerId);return;
+      }
       if(gesture.holding)updateHold(gesture,event.clientX,event.clientY);
       else {
         const dx=(event.clientX-gesture.x)/gesture.unit,dy=(event.clientY-gesture.y)/gesture.unit;

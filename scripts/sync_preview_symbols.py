@@ -20,6 +20,11 @@ def sync():
         lambda _: 'const inputRoutes = ' + json.dumps(routes, ensure_ascii=False) + ';', result, count=1)
     if count != 1:
         raise ValueError('Missing preview input routes declaration')
+    symbols = json.loads((ROOT / 'default/jsonnet/Constants/SymbolCatalog.json').read_text(encoding='utf-8'))
+    declaration = 'const symbolCatalog = ' + json.dumps(symbols, ensure_ascii=False) + ';'
+    result, count = re.subn(r'const symbolCatalog = [^\n]*;', lambda _: declaration, result, count=1)
+    if count != 1:
+        raise ValueError('Missing preview collection catalog declaration')
     path.write_text(result, encoding='utf-8', newline='\n')
 
 

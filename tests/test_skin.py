@@ -312,15 +312,15 @@ class GeneratedSkinTests(unittest.TestCase):
             self.assertLess(rects['fourButton'][1], rects['sevenButton'][1])
             self.assertEqual(rects['oneButton'][0], rects['fourButton'][0])
             self.assertAlmostEqual(rects['twoButton'][0], rects['zeroButton'][0])
-            self.assertEqual(doc['numericOperatorData'], ['+', '-', '*', '/'])
+            self.assertEqual(doc['numericOperatorData'], list(r'+-\*/%:#=<>;()[]{}&|\\^\_\~\`@?!'))
             self.assertEqual(doc['pinyinButton']['action'], 'returnPrimaryKeyboard')
 
     def test_symbol_category_grid_and_lock(self):
         doc = load('symbolicPortrait')
         self.assertEqual(doc['symbolCategories']['maximumRow'], 3)
         self.assertEqual((doc['symbolCollection']['maximumRow'], doc['symbolCollection']['maximumColumn']), (5, 4))
-        for category in doc['symbolCategoryData']:
-            self.assertEqual(len(doc[category]), 20)
+        self.assertEqual(doc['symbolCategoryData'], ['常用', '中文', '英文', '网络', '数学', '括号', '序号', '特殊', '希腊', '拼音', '注音', '日文'])
+        self.assertEqual(len(doc['常用']), 20)
         self.assertEqual(doc['symbolLockButton']['action'], 'symbolicKeyboardLockStateToggle')
         for locked, name in ((False, 'lock.open'), (True, 'lock')):
             refs = selected_styles(doc['symbolLockButton']['foregroundStyle'], {'$symbolicKeyboardLockState': locked})
