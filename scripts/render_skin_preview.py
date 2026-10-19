@@ -4,6 +4,7 @@ Requires Pillow. SF Symbols are approximated with simple vector strokes; all key
 geometry, text, layers, colors and collection data come from the generated files.
 """
 import argparse
+from functools import lru_cache
 import json
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -14,14 +15,32 @@ SCALE = 3
 CONDITIONS = {'$returnKeyType': 0, 'rime$ascii_mode': False, '$symbolicKeyboardLockState': False}
 
 
+@lru_cache(maxsize=256)
+def load_font(path, size):
+    return ImageFont.truetype(str(path), size)
+
+
+@lru_cache(maxsize=4096)
+def supports_character(path, character):
+    candidate = load_font(path, 48)
+    glyph = candidate.getmask(character)
+    missing = candidate.getmask('\U0010ffff')
+    return glyph.size != missing.size or bytes(glyph) != bytes(missing)
+
+
 def font(size, text='', weight='regular'):
     cjk = any(ord(char) > 0x2ff for char in text)
     candidates = ([Path('C:/Windows/Fonts/msyhbd.ttc' if weight != 'regular' else 'C:/Windows/Fonts/msyh.ttc')] if cjk else []) + ([Path('C:/Windows/Fonts/segoeuib.ttf')] if weight != 'regular' else []) + [
-        Path('C:/Windows/Fonts/segoeui.ttf'), Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')]
+        Path('C:/Windows/Fonts/segoeui.ttf'), Path('C:/Windows/Fonts/seguisym.ttf'),
+        Path('C:/Windows/Fonts/msjh.ttc'), Path('C:/Windows/Fonts/simsun.ttc'),
+        Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')]
+    fallback = None
     for candidate in candidates:
         if candidate.is_file():
-            return ImageFont.truetype(str(candidate), max(1, round(size * SCALE)))
-    return ImageFont.load_default()
+            fallback = candidate if fallback is None else fallback
+            if all(supports_character(candidate, character) for character in text):
+                return load_font(candidate, max(1, round(size * SCALE)))
+    return load_font(fallback, max(1, round(size * SCALE))) if fallback else ImageFont.load_default()
 
 
 def selected(value, ascii_mode=False):

@@ -21,6 +21,17 @@ from build_skin import layout_rectangles
 
 @unittest.skipUnless(HAS_PILLOW, 'Pillow is optional; install it to test preview pixels')
 class ClassificationHighlightTests(unittest.TestCase):
+    @unittest.skipUnless(Path('C:/Windows/Fonts/seguisym.ttf').is_file(), 'Windows symbol fonts unavailable')
+    def test_catalog_symbols_have_renderable_glyphs_with_font_fallback(self):
+        from render_skin_preview import font
+        catalog = json.loads((ROOT / 'default/jsonnet/Constants/SymbolCatalog.json').read_text(encoding='utf-8'))
+        characters = {character for category in catalog['categories'] for value in category['symbols'] for character in value}
+        for character in sorted(characters):
+            with self.subTest(character=character, codepoint=f'U+{ord(character):04X}'):
+                candidate = font(20, character)
+                glyph, missing = candidate.getmask(character), candidate.getmask('\U0010ffff')
+                self.assertTrue(glyph.size != missing.size or bytes(glyph) != bytes(missing))
+
     def test_offscreen_collection_entries_do_not_paint_outside_viewports(self):
         original_loads = json.loads
         for scheme in ('light', 'dark'):
