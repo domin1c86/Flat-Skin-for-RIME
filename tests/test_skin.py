@@ -290,7 +290,7 @@ class GeneratedSkinTests(unittest.TestCase):
         catalog = json.loads((ROOT / 'default/jsonnet/Constants/LetterSymbols.json').read_text(encoding='utf-8'))
         self.assertEqual(catalog['letters'], 'qwertyuiopasdfghjklzxcvbnm')
         self.assertEqual(catalog['chinese'], '1234567890～！＠＃％“”＊？（）-_：；`')
-        self.assertEqual(catalog['english'], '1234567890~!@#%""*?()-_:;`')
+        self.assertEqual(catalog['english'], "1234567890~!@#%'&*?()-_:;/")
         html = (ROOT / 'preview/index.html').read_text(encoding='utf-8')
         declaration = re.search(r'const letterSymbols = (.*);', html).group(1)
         self.assertEqual(json.loads(declaration), catalog)

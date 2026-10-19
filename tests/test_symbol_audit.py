@@ -47,8 +47,8 @@ class SymbolAuditTests(unittest.TestCase):
         doc['chineseCommaButton']['action'] = {'symbol': '，'}
         self.assertEqual(set(inspect_punctuation(doc, True)), {'chineseCommaButton'})
 
-    def test_wrong_ascii_quotes_are_detected_on_each_route(self):
-        for letter in 'hj':
+    def test_wrong_english_reference_symbols_are_detected_on_each_route(self):
+        for letter in 'hjm':
             for route in ('hint', 'swipe', 'hold', 'upper_hold'):
                 doc = deepcopy(self.en)
                 node = doc[letter + 'Button']
